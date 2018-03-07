@@ -2,6 +2,10 @@
 from enum import Flag, auto
 from PIL import Image
 
+# todo: autosize axes
+# todo: debug drawing (visualise anchors and origins, among other things)
+# todo: disable/enable masking
+
 def _round_tuple_values(inputTuple):
 	return tuple(round(v) for v in inputTuple)
 
@@ -17,38 +21,38 @@ class Drawable:
 		self.position = (x, y)
 		self.anchor = Anchor.TOP_LEFT
 		self.origin = Anchor.TOP_LEFT
-		self.relativeSizeAxis = Axis.NONE
+		self.relativeSizeAxes = Axes.NONE
 
 		for key, value in kwargs.items():
 			setattr(self, key, value)
 
 	@property
-	def calculated_size(self):
+	def draw_size(self):
 		size = self.size
 
-		if self.relativeSizeAxis is not Axis.NONE:
+		if self.relativeSizeAxes is not Axes.NONE:
 			if self.parent is None:
-				raise ValueError('cannot use relativeSizeAxis without having a parent')
+				raise ValueError('cannot use relativeSizeAxes without having a parent')
 
-			p = self.parent.calculated_size
+			p = self.parent.draw_size
 			relativeWidth = p[0] * size[0]
 			relativeHeight = p[1] * size[1]
 
-			if self.relativeSizeAxis & Axis.X:
+			if self.relativeSizeAxes & Axes.X:
 				size = (relativeWidth, size[1])
 
-			if self.relativeSizeAxis & Axis.Y:
+			if self.relativeSizeAxes & Axes.Y:
 				size = (size[0], relativeHeight)
 
 		return size
 
 	@property
-	def calculated_position(self):
+	def draw_position(self):
 		position = self.position
 
 		if self.parent is not None:
-			p = self.parent.calculated_size
-			s = self.calculated_size
+			p = self.parent.draw_size
+			s = self.draw_size
 			a = self.anchor
 			o = self.origin
 
@@ -71,7 +75,8 @@ class Drawable:
 
 			anchorPosition = [a * b for a, b in zip(anchor_value(a), s)]
 			originPosition = [a * b for a, b in zip(anchor_value(o), p)]
-			position = [a - b for a, b in zip(originPosition, anchorPosition)]
+			anchorOriginPosition = [a - b for a, b in zip(originPosition, anchorPosition)]
+			position = [a + b for a, b in zip(anchorOriginPosition, position)]
 
 		return position
 
@@ -80,11 +85,26 @@ class Drawable:
 
 class Container(Drawable):
 	def __init__(self, children=[], **kwargs):
+		self.autoSizeAxes = Axes.NONE
+
 		super(Container, self).__init__(**kwargs)
 		self.children = []
 
 		for child in children:
 			self.add(child)
+
+	@property
+	def draw_size(self):
+		size = super(Container, self).draw_size
+
+		if self.autoSizeAxes is not Axes.NONE:
+			# if auto size and relative size are on the same axis
+			if self.relativeSizeAxes & Axes.X and self.autoSizeAxes & Axes.X or self.relativeSizeAxes & Axes.Y and self.autoSizeAxes & Axes.Y:
+				raise ValueError('cannot use relativeSizeAxes and autoSizeAxes on the same Axes')
+
+			# todo: autosize calculation
+
+		return size
 
 	def add(self, child):
 		child.parent = self
@@ -98,10 +118,10 @@ class Container(Drawable):
 		self.children.remove(child)
 
 	def render(self):
-		container = Image.new('RGBA', _round_tuple_values(self.calculated_size), (255, 255, 255, 0))
+		container = Image.new('RGBA', _round_tuple_values(self.draw_size), (255, 255, 255, 0))
 
 		for child in self.children:
-			container = _paste_image(container, child.render(), _round_tuple_values(child.calculated_position))
+			container = _paste_image(container, child.render(), _round_tuple_values(child.draw_position))
 
 		return container
 
@@ -111,7 +131,7 @@ class Box(Drawable):
 		self.colour = colour
 
 	def render(self):
-		return Image.new('RGB', _round_tuple_values(self.calculated_size), self.colour)
+		return Image.new('RGB', _round_tuple_values(self.draw_size), self.colour)
 
 class Anchor(Flag):
 	X_LEFT = auto()
@@ -134,7 +154,7 @@ class Anchor(Flag):
 	BOTTOM_CENTER = X_CENTER | Y_BOTTOM
 	BOTTOM_RIGHT = X_RIGHT | Y_BOTTOM
 
-class Axis(Flag):
+class Axes(Flag):
 	NONE = 0
 	X = auto()
 	Y = auto()
