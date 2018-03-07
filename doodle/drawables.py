@@ -11,10 +11,10 @@ def _paste_image(background, foreground, position):
 	return Image.alpha_composite(background, temp)
 
 class Drawable:
-	def __init__(self, **kwargs):
+	def __init__(self, width=0, height=0, x=0, y=0, **kwargs):
 		self.parent = None
-		self.size = (0, 0)
-		self.position = (0, 0)
+		self.size = (width, height)
+		self.position = (x, y)
 		self.anchor = Anchor.TOP_LEFT
 		self.origin = Anchor.TOP_LEFT
 		self.relativeSizeAxis = Axis.NONE
