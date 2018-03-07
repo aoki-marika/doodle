@@ -1,11 +1,11 @@
 
-from enum import Enum
+from enum import Flag, auto
 from PIL import Image
 
-def round_tuple_values(inputTuple):
+def _round_tuple_values(inputTuple):
 	return tuple(round(v) for v in inputTuple)
 
-def paste_image(background, foreground, position):
+def _paste_image(background, foreground, position):
 	temp = Image.new('RGBA', background.size, (255, 255, 255, 0))
 	temp.paste(foreground, position)
 	return Image.alpha_composite(background, temp)
@@ -23,25 +23,57 @@ class Drawable:
 			setattr(self, key, value)
 
 	@property
-	def calculatedSize(self):
+	def calculated_size(self):
 		size = self.size
 
 		if self.relativeSizeAxis is not Axis.NONE:
 			if self.parent is None:
 				raise ValueError('cannot use relativeSizeAxis without having a parent')
 
-			p = self.parent.calculatedSize
+			p = self.parent.calculated_size
 			relativeWidth = p[0] * size[0]
 			relativeHeight = p[1] * size[1]
 
-			if self.relativeSizeAxis is Axis.X:
-				size[0] = relativeWidth
-			elif self.relativeSizeAxis is Axis.Y:
-				size[1] = relativeHeight
-			elif self.relativeSizeAxis is Axis.BOTH:
-				size = (relativeWidth, relativeHeight)
+			if self.relativeSizeAxis & Axis.X:
+				size = (relativeWidth, size[1])
+
+			if self.relativeSizeAxis & Axis.Y:
+				size = (size[0], relativeHeight)
 
 		return size
+
+	@property
+	def calculated_position(self):
+		position = self.position
+
+		if self.parent is not None:
+			p = self.parent.calculated_size
+			s = self.calculated_size
+			a = self.anchor
+			o = self.origin
+
+			def anchor_value(anchor):
+				if anchor & Anchor.X_LEFT:
+					anchorX = 0
+				elif anchor & Anchor.X_CENTER:
+					anchorX = 0.5
+				elif anchor & Anchor.X_RIGHT:
+					anchorX = 1
+
+				if anchor & Anchor.Y_TOP:
+					anchorY = 0
+				elif anchor & Anchor.Y_CENTER:
+					anchorY = 0.5
+				elif anchor & Anchor.Y_BOTTOM:
+					anchorY = 1
+
+				return (anchorX, anchorY)
+
+			anchorPosition = [a * b for a, b in zip(anchor_value(a), s)]
+			originPosition = [a * b for a, b in zip(anchor_value(o), p)]
+			position = [a - b for a, b in zip(originPosition, anchorPosition)]
+
+		return position
 
 	def render(self):
 		raise NotImplementedError('Drawable subclasses must implement render')
@@ -66,10 +98,10 @@ class Container(Drawable):
 		self.children.remove(child)
 
 	def render(self):
-		container = Image.new('RGBA', round_tuple_values(self.calculatedSize), (255, 255, 255, 0))
+		container = Image.new('RGBA', _round_tuple_values(self.calculated_size), (255, 255, 255, 0))
 
 		for child in self.children:
-			container = paste_image(container, child.render(), child.position)
+			container = _paste_image(container, child.render(), _round_tuple_values(child.calculated_position))
 
 		return container
 
@@ -79,21 +111,31 @@ class Box(Drawable):
 		self.colour = colour
 
 	def render(self):
-		return Image.new('RGB', round_tuple_values(self.calculatedSize), self.colour)
+		return Image.new('RGB', _round_tuple_values(self.calculated_size), self.colour)
 
-class Anchor(Enum):
-	TOP_LEFT = 0
-	TOP_CENTER = 1
-	TOP_RIGHT = 2
-	CENTER_LEFT = 3
-	CENTER = 4
-	CENTER_RIGHT = 5
-	BOTTOM_LEFT = 6
-	BOTTOM = 7
-	BOTTOM_RIGHT = 8
+class Anchor(Flag):
+	X_LEFT = auto()
+	X_CENTER = auto()
+	X_RIGHT = auto()
 
-class Axis(Enum):
+	Y_TOP = auto()
+	Y_CENTER = auto()
+	Y_BOTTOM = auto()
+
+	TOP_LEFT = X_LEFT | Y_TOP
+	TOP_CENTER = X_CENTER | Y_TOP
+	TOP_RIGHT = X_RIGHT | Y_TOP
+
+	CENTER_LEFT = X_LEFT | Y_CENTER
+	CENTER = X_CENTER | Y_CENTER
+	CENTER_RIGHT = X_RIGHT | Y_CENTER
+
+	BOTTOM_LEFT = X_LEFT | Y_BOTTOM
+	BOTTOM_CENTER = X_CENTER | Y_BOTTOM
+	BOTTOM_RIGHT = X_RIGHT | Y_BOTTOM
+
+class Axis(Flag):
 	NONE = 0
-	X = 1
-	Y = 2
-	BOTH = 3
+	X = auto()
+	Y = auto()
+	BOTH = X | Y

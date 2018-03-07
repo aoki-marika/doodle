@@ -22,6 +22,12 @@ def container_test():
 						relativeSizeAxis=Axis.BOTH,
 						size=(1, 1),
 					),
+					drawables.Box(
+						anchor=Anchor.CENTER,
+						colour=(0, 0, 255),
+						relativeSizeAxis = Axis.BOTH,
+						size=(0.5, 0.5),
+					)
 				]
 			),
 		],
