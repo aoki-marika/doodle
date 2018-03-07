@@ -1,5 +1,14 @@
 
 from enum import Enum
+from PIL import Image
+
+def round_tuple_values(inputTuple):
+	return tuple(round(v) for v in inputTuple)
+
+def paste_image(background, foreground, position):
+	temp = Image.new('RGBA', background.size, (255, 255, 255, 0))
+	temp.paste(foreground, position)
+	return Image.alpha_composite(background, temp)
 
 class Drawable:
 	def __init__(self, **kwargs):
@@ -12,6 +21,30 @@ class Drawable:
 
 		for key, value in kwargs.items():
 			setattr(self, key, value)
+
+	@property
+	def calculatedSize(self):
+		size = self.size
+
+		if self.relativeSizeAxis is not Axis.NONE:
+			if self.parent is None:
+				raise ValueError('cannot use relativeSizeAxis without having a parent')
+
+			p = self.parent.calculatedSize
+			relativeWidth = p[0] * size[0]
+			relativeHeight = p[1] * size[1]
+
+			if self.relativeSizeAxis is Axis.X:
+				size[0] = relativeWidth
+			elif self.relativeSizeAxis is Axis.Y:
+				size[1] = relativeHeight
+			elif self.relativeSizeAxis is Axis.BOTH:
+				size = (relativeWidth, relativeHeight)
+
+		return size
+
+	def render(self):
+		raise NotImplementedError('Drawable subclasses must implement render')
 
 class Container(Drawable):
 	def __init__(self, children=[], **kwargs):
@@ -26,16 +59,27 @@ class Container(Drawable):
 		self.children.append(child)
 
 	def remove(self, child):
-		if child.parent != self:
+		if child.parent is not self:
 			raise ValueError('cannot remove a child that is not in this Container')
 
 		child.parent = None
 		self.children.remove(child)
 
+	def render(self):
+		container = Image.new('RGBA', round_tuple_values(self.calculatedSize), (255, 255, 255, 0))
+
+		for child in self.children:
+			container = paste_image(container, child.render(), child.position)
+
+		return container
+
 class Box(Drawable):
 	def __init__(self, colour, **kwargs):
 		super(Box, self).__init__(**kwargs)
 		self.colour = colour
+
+	def render(self):
+		return Image.new('RGB', round_tuple_values(self.calculatedSize), self.colour)
 
 class Anchor(Enum):
 	TOP_LEFT = 0
