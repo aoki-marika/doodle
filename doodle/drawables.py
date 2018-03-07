@@ -25,6 +25,13 @@ class Container(Drawable):
 		child.parent = self
 		self.children.append(child)
 
+	def remove(self, child):
+		if child.parent != self:
+			raise ValueError('cannot remove a child that is not in this Container')
+
+		child.parent = None
+		self.children.remove(child)
+
 class Box(Drawable):
 	def __init__(self, colour, **kwargs):
 		super(Box, self).__init__(**kwargs)
