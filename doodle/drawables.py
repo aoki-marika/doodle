@@ -2,7 +2,6 @@
 from enum import Flag, auto
 from PIL import Image
 
-# todo: disable/enable masking
 # todo: only recalculate draw/layout size/position when values change, not on every get
 
 def _round_tuple_values(inputTuple):
@@ -27,6 +26,38 @@ class Drawable:
 			setattr(self, key, value)
 
 	@property
+	def width(self):
+		return self.size[0]
+
+	@width.setter
+	def width(self, value):
+		self.size = (value, self.size[1])
+
+	@property
+	def height(self):
+		return self.size[1]
+
+	@height.setter
+	def height(self, value):
+		self.size = (self.size[0], value)
+
+	@property
+	def x(self):
+		return self.position[0]
+
+	@x.setter
+	def x(self, value):
+		self.position = (value, self.position[1])
+
+	@property
+	def y(self):
+		return self.position[1]
+
+	@y.setter
+	def y(self, value):
+		self.position = (self.position[0], value)
+
+	@property
 	def draw_size(self):
 		size = self.size
 
@@ -39,10 +70,10 @@ class Drawable:
 			relativeHeight = p[1] * size[1]
 
 			if self.relativeSizeAxes & Axes.X:
-				size = (relativeWidth - (self.margin[2] + self.margin[3]), size[1])
+				size = (relativeWidth, size[1])
 
 			if self.relativeSizeAxes & Axes.Y:
-				size = (size[0], relativeHeight - (self.margin[0] + self.margin[1]))
+				size = (size[0], relativeHeight)
 
 		return size
 
@@ -74,10 +105,10 @@ class Drawable:
 
 				return (anchorX, anchorY)
 
-			anchorPosition = [a * b for a, b in zip(anchor_value(anchor), size)]
-			originPosition = [a * b for a, b in zip(anchor_value(origin), parentSize)]
-			originPosition = [a + b for a, b in zip(originPosition, parentPosition)]
-			anchorOriginPosition = [a - b for a, b in zip(originPosition, anchorPosition)]
+			originPosition = [a * b for a, b in zip(anchor_value(origin), size)]
+			anchorPosition = [a * b for a, b in zip(anchor_value(anchor), parentSize)]
+			anchorPosition = [a + b for a, b in zip(anchorPosition, parentPosition)]
+			anchorOriginPosition = [a - b for a, b in zip(anchorPosition, originPosition)]
 			position = [a + b for a, b in zip(anchorOriginPosition, position)]
 
 		# place the draw position correctly inside margin
@@ -116,6 +147,7 @@ class Drawable:
 class Container(Drawable):
 	def __init__(self, children=[], **kwargs):
 		self.padding = (0, 0, 0, 0)
+		self.masking = True
 
 		super(Container, self).__init__(**kwargs)
 		self.children = []
@@ -135,6 +167,23 @@ class Container(Drawable):
 
 		return (self.padding[2], self.padding[0])
 
+	@property
+	def render_size(self):
+		if not self.masking and self.parent:
+			return self.parent.render_size
+		else:
+			return self.draw_size
+
+	@property
+	def render_position(self):
+		if not self.masking:
+			if self.parent:
+				return [a + b for a, b in zip(self.parent.render_position, self.draw_position)]
+			else:
+				return self.draw_position
+		else:
+			return self.draw_position
+
 	def add(self, child):
 		child.parent = self
 		self.children.append(child)
@@ -147,10 +196,18 @@ class Container(Drawable):
 		self.children.remove(child)
 
 	def render(self):
-		container = Image.new('RGBA', _round_tuple_values(self.draw_size), (255, 255, 255, 0))
+		container = Image.new('RGBA', _round_tuple_values(self.render_size), (255, 255, 255, 0))
 
 		for child in self.children:
-			container = _paste_image(container, child.render(), _round_tuple_values(child.draw_position))
+			if self.masking and (self.parent and self.parent.masking):
+				position = child.draw_position
+			else:
+				if isinstance(child, Container) and not child.masking:
+					position = (0, 0)
+				else:
+					position = [a + b for a, b in zip(self.render_position, child.draw_position)]
+
+			container = _paste_image(container, child.render(), _round_tuple_values(position))
 
 		return container
 
