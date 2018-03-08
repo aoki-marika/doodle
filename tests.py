@@ -1,5 +1,6 @@
 
-from doodle import Drawable, Container, Box, Anchor, Axes
+from doodle import Drawable, Container, Box, Texture, Anchor, Axes
+from PIL import Image
 
 def container_test():
 	container = Container(
@@ -58,7 +59,7 @@ def container_test():
 		],
 	)
 
-	container.render().save('container_test.png')
+	container.render().save('tests/container_test.png')
 
 def margin_padding_test():
 	container = Container(
@@ -152,7 +153,7 @@ def margin_padding_test():
 		],
 	)
 
-	container.render().save('margin_padding_test.png')
+	container.render().save('tests/margin_padding_test.png')
 
 def masking_test():
 	container = Container(
@@ -203,7 +204,7 @@ def masking_test():
 		],
 	)
 
-	container.render().save('masking_test.png')
+	container.render().save('tests/masking_test.png')
 
 class ProgressBar(Container):
 	def __init__(self, **kwargs):
@@ -268,10 +269,41 @@ def component_test():
 	)
 
 	progress.progress = 0.3
-	container.render().save('component_test.png')
+	container.render().save('tests/component_test.png')
+
+def texture_test():
+	image = Image.open("tests/lenna.png")
+
+	container = Container(
+		size=(400, 400),
+		children=[
+			Texture(
+				relativeSizeAxes=Axes.BOTH,
+				size=(1, 1),
+				image=image,
+			),
+			Texture(
+				relativeSizeAxes=Axes.BOTH,
+				width=0.5,
+				height=1,
+				image=image,
+			),
+			Texture(
+				anchor=Anchor.BOTTOM_RIGHT,
+				origin=Anchor.BOTTOM_RIGHT,
+				relativeSizeAxes=Axes.BOTH,
+				size=(0.4, 0.4),
+				image=image,
+				margin=(0, 20, 0, 20),
+			),
+		],
+	)
+
+	container.render().save('tests/texture_test.png')
 
 if __name__ == '__main__':
 	container_test()
 	margin_padding_test()
 	masking_test()
 	component_test()
+	texture_test()

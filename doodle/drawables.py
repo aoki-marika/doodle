@@ -330,6 +330,34 @@ class Box(Drawable):
 		return Image.new('RGB', round_tuple_values(self.draw_size), self.colour)
 
 """
+A type of <Drawable> that draws an <Image>.
+"""
+class Texture(Drawable):
+	def __init__(self, **kwargs):
+		self._image = None
+
+		super(Texture, self).__init__(**kwargs)
+
+	@property
+	def image(self):
+		"""
+		The <Image> that this texture should draw.
+
+		:getter: Returns this textures image.
+		:setter: Sets this textures image.
+		:type: Image
+		"""
+
+		return self._image
+
+	@image.setter
+	def image(self, value):
+		self._image = value
+
+	def render(self):
+		return self.image.resize(round_tuple_values(self.draw_size), Image.ANTIALIAS)
+
+"""
 A relative point in a box.
 """
 class Anchor(Flag):
