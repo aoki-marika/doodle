@@ -32,7 +32,7 @@ A type of `Drawable` that can hold other `Drawable`s inside of it.
 
 **Padding**: The padding of each side of this `Container` (`top`, `bottom`, `left`, `right`).
 
-**AutoSizeAxes**: Set `width` and or `height` to automatically resize to fit this `Container`'s `children`.
+**AutoSizeAxes** (currently not implemented): Set `width` and or `height` to automatically resize to fit this `Container`'s `children`.
 
 **DrawSize**: The final size of this `Drawable`, with `relativeSizeAxes` and `autoSizeAxes` applied.
 

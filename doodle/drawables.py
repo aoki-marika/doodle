@@ -2,8 +2,6 @@
 from enum import Flag, auto
 from PIL import Image
 
-# todo: autosize axes
-# todo: debug drawing (visualise anchors and origins, among other things)
 # todo: disable/enable masking
 # todo: only recalculate draw/layout size/position when values change, not on every get
 
@@ -117,7 +115,6 @@ class Drawable:
 
 class Container(Drawable):
 	def __init__(self, children=[], **kwargs):
-		self.autoSizeAxes = Axes.NONE
 		self.padding = (0, 0, 0, 0)
 
 		super(Container, self).__init__(**kwargs)
@@ -125,19 +122,6 @@ class Container(Drawable):
 
 		for child in children:
 			self.add(child)
-
-	@property
-	def draw_size(self):
-		size = super(Container, self).draw_size
-
-		if self.autoSizeAxes is not Axes.NONE:
-			# if auto size and relative size are on the same axis
-			if self.relativeSizeAxes & Axes.X and self.autoSizeAxes & Axes.X or self.relativeSizeAxes & Axes.Y and self.autoSizeAxes & Axes.Y:
-				raise ValueError('cannot use relativeSizeAxes and autoSizeAxes on the same Axes')
-
-			# todo: autosize calculation
-
-		return size
 
 	@property
 	def children_size(self):
