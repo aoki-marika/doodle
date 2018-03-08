@@ -131,6 +131,96 @@ def autosize_test():
 
 	container.render().save('autosize_test.png')
 
+def margin_padding_test():
+	container = Container(
+		size=(400, 400),
+		padding=(10, 20, 30, 40),
+		children=[
+			Box(
+				relativeSizeAxes=Axes.BOTH,
+				size=(1, 1),
+				colour=(255, 0, 0),
+			),
+			Box(
+				relativeSizeAxes=Axes.Y,
+				size=(50, 1),
+				colour=(0, 255, 0),
+				margin=(10, 20, 30, 40)
+			),
+			Box(
+				relativeSizeAxes=Axes.X,
+				size=(1, 50),
+				colour=(0, 0, 255),
+				margin=(10, 20, 30, 40)
+			),
+			Container(
+				relativeSizeAxes=Axes.BOTH,
+				size=(1, 1),
+				padding=(80, 20, 100, 40),
+				children=[
+					Box(
+						relativeSizeAxes=Axes.BOTH,
+						size=(1, 1),
+						colour=(255, 255, 0),
+					),
+					Container(
+						size=(60, 100),
+						margin=(20, 0, 20, 0),
+						children=[
+							Box(
+								relativeSizeAxes=Axes.BOTH,
+								size=(1, 1),
+								colour=(0, 255, 255),
+							),
+						],
+					),
+					Container(
+						anchor=Anchor.TOP_RIGHT,
+						origin=Anchor.TOP_RIGHT,
+						size=(60, 100),
+						margin=(20, 0, 0, 20),
+						children=[
+							Box(
+								relativeSizeAxes=Axes.BOTH,
+								size=(1, 1),
+								colour=(0, 255, 255),
+							),
+						],
+					),
+					Container(
+						anchor=Anchor.BOTTOM_LEFT,
+						origin=Anchor.BOTTOM_LEFT,
+						size=(60, 100),
+						margin=(0, 20, 20, 0),
+						children=[
+							Box(
+								relativeSizeAxes=Axes.BOTH,
+								size=(1, 1),
+								colour=(0, 255, 255),
+							),
+						],
+					),
+					Container(
+						anchor=Anchor.BOTTOM_RIGHT,
+						origin=Anchor.BOTTOM_RIGHT,
+						size=(60, 100),
+						margin=(0, 20, 0, 20),
+						children=[
+							Box(
+								relativeSizeAxes=Axes.BOTH,
+								size=(1, 1),
+								colour=(0, 255, 255),
+							),
+						],
+					),
+				],
+			),
+		],
+	)
+
+	container.render().save('margin_padding_test.png')
+
 if __name__ == '__main__':
 	container_test()
 	# autosize_test()
+	margin_padding_test()

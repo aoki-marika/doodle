@@ -5,6 +5,7 @@ from PIL import Image
 # todo: autosize axes
 # todo: debug drawing (visualise anchors and origins, among other things)
 # todo: disable/enable masking
+# todo: only recalculate draw/layout size/position when values change, not on every get
 
 def _round_tuple_values(inputTuple):
 	return tuple(round(v) for v in inputTuple)
@@ -22,6 +23,7 @@ class Drawable:
 		self.anchor = Anchor.TOP_LEFT
 		self.origin = Anchor.TOP_LEFT
 		self.relativeSizeAxes = Axes.NONE
+		self.margin = (0, 0, 0, 0)
 
 		for key, value in kwargs.items():
 			setattr(self, key, value)
@@ -34,15 +36,15 @@ class Drawable:
 			if self.parent is None:
 				raise ValueError('cannot use relativeSizeAxes without having a parent')
 
-			p = self.parent.draw_size
+			p = self.parent.children_size
 			relativeWidth = p[0] * size[0]
 			relativeHeight = p[1] * size[1]
 
 			if self.relativeSizeAxes & Axes.X:
-				size = (relativeWidth, size[1])
+				size = (relativeWidth - (self.margin[2] + self.margin[3]), size[1])
 
 			if self.relativeSizeAxes & Axes.Y:
-				size = (size[0], relativeHeight)
+				size = (size[0], relativeHeight - (self.margin[0] + self.margin[1]))
 
 		return size
 
@@ -51,10 +53,11 @@ class Drawable:
 		position = self.position
 
 		if self.parent is not None:
-			p = self.parent.draw_size
-			s = self.draw_size
-			a = self.anchor
-			o = self.origin
+			parentSize = self.parent.children_size
+			parentPosition = self.parent.children_position
+			size = self.draw_size
+			anchor = self.anchor
+			origin = self.origin
 
 			def anchor_value(anchor):
 				if anchor & Anchor.X_LEFT:
@@ -73,12 +76,41 @@ class Drawable:
 
 				return (anchorX, anchorY)
 
-			anchorPosition = [a * b for a, b in zip(anchor_value(a), s)]
-			originPosition = [a * b for a, b in zip(anchor_value(o), p)]
+			anchorPosition = [a * b for a, b in zip(anchor_value(anchor), size)]
+			originPosition = [a * b for a, b in zip(anchor_value(origin), parentSize)]
+			originPosition = [a + b for a, b in zip(originPosition, parentPosition)]
 			anchorOriginPosition = [a - b for a, b in zip(originPosition, anchorPosition)]
 			position = [a + b for a, b in zip(anchorOriginPosition, position)]
 
+		# place the draw position correctly inside margin
+		marginX = 0
+		marginY = 0
+
+		if self.anchor & Anchor.X_LEFT:
+			marginX = self.margin[2]
+		elif self.anchor & Anchor.X_RIGHT:
+			marginX = -self.margin[3]
+
+		if self.anchor & Anchor.Y_TOP:
+			marginY = self.margin[0]
+		elif self.anchor & Anchor.Y_BOTTOM:
+			marginY = -self.margin[1]
+
+		position = (position[0] + marginX, position[1] + marginY)
+
 		return position
+
+	@property
+	def layout_size(self):
+		s = self.draw_size
+
+		return (s[0] + (self.margin[2] + self.margin[3]), s[1] + (self.margin[0] + self.margin[1]))
+
+	@property
+	def layout_position(self):
+		p = self.draw_position
+
+		return (p[0] - self.margin[2], p[1] - self.margin[0])
 
 	def render(self):
 		raise NotImplementedError('Drawable subclasses must implement render')
@@ -86,6 +118,7 @@ class Drawable:
 class Container(Drawable):
 	def __init__(self, children=[], **kwargs):
 		self.autoSizeAxes = Axes.NONE
+		self.padding = (0, 0, 0, 0)
 
 		super(Container, self).__init__(**kwargs)
 		self.children = []
@@ -105,6 +138,18 @@ class Container(Drawable):
 			# todo: autosize calculation
 
 		return size
+
+	@property
+	def children_size(self):
+		s = self.draw_size
+
+		return (s[0] - (self.padding[2] + self.padding[3]), s[1] - (self.padding[0] + self.padding[1]))
+
+	@property
+	def children_position(self):
+		p = self.draw_position
+
+		return (self.padding[2], self.padding[0])
 
 	def add(self, child):
 		child.parent = self
