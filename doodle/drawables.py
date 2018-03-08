@@ -1,6 +1,9 @@
 
 from enum import Flag, auto
+
 from PIL import Image
+from PIL import ImageDraw
+from PIL import ImageFont
 
 from .utils import round_tuple_values, paste_image
 
@@ -356,6 +359,104 @@ class Texture(Drawable):
 
 	def render(self):
 		return self.image.resize(round_tuple_values(self.draw_size), Image.ANTIALIAS)
+
+"""
+A type of <Drawable> that can draw text with fonts.
+
+You should not set the size on this drawable as it automatically calculates its size.
+"""
+class Text(Drawable):
+	def __init__(self, fontPath, textColour, textSize, text, **kwargs):
+		super(Text, self).__init__(**kwargs)
+
+		# init the parameters so we dont crash when calling <apply_size> without all the parameters set
+		self._fontPath = None
+		self.textColour = None
+		self._textSize = None
+		self._text = None
+
+		self.fontPath = fontPath
+		self.textColour = textColour
+		self.textSize = textSize
+		self.text = text
+
+	@property
+	def fontPath(self):
+		"""
+		The path of the font that this text should use when drawing text.
+
+		:getter: Returns this texts font path.
+		:setter: Sets this texts font font.
+		:type: string
+		"""
+
+		return self._fontPath
+
+	@fontPath.setter
+	def fontPath(self, value):
+		self._fontPath = value
+		self.apply_size()
+
+	@property
+	def textSize(self):
+		"""
+		The height in pixels that this text should be drawn with.
+
+		:getter: Returns this texts size.
+		:setter: Sets this texts size.
+		:type: int
+		"""
+
+		return self._textSize
+
+	@textSize.setter
+	def textSize(self, value):
+		self._textSize = value
+		self.apply_size()
+
+	@property
+	def text(self):
+		"""
+		The text for this text to display.
+
+		:getter: Returns this texts text.
+		:setter: Sets this texts text.
+		:type: string
+		"""
+
+		return self._text
+
+	@text.setter
+	def text(self, value):
+		self._text = value
+		self.apply_size()
+
+	"""
+	Get this texts font.
+
+	:returns: An <ImageFont>.
+	"""
+	def get_font(self):
+		if self.fontPath and self.textSize:
+			return ImageFont.truetype(self.fontPath, self.textSize)
+		else:
+			return None
+
+	"""
+	Correctly set the size of this text to fit <text> using <get_font>.
+	"""
+	def apply_size(self):
+		if self.text:
+			font = self.get_font()
+			if font:
+				self.size = font.getsize(self.text)
+
+	def render(self):
+		temp = Image.new('RGBA', self.draw_size, (255, 255, 255, 0))
+		draw = ImageDraw.Draw(temp)
+		draw.text((0, 0), self.text, self.textColour, font=self.get_font())
+
+		return temp
 
 """
 A relative point in a box.

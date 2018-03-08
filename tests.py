@@ -1,5 +1,6 @@
 
-from doodle import Drawable, Container, Box, Texture, Anchor, Axes
+from doodle import Drawable, Container, Box, Texture, Text, Anchor, Axes
+
 from PIL import Image
 
 def container_test():
@@ -272,7 +273,7 @@ def component_test():
 	container.render().save('tests/component_test.png')
 
 def texture_test():
-	image = Image.open("tests/lenna.png")
+	image = Image.open('tests/assets/lenna.png')
 
 	container = Container(
 		size=(400, 400),
@@ -301,9 +302,65 @@ def texture_test():
 
 	container.render().save('tests/texture_test.png')
 
+def text_test():
+	font = 'tests/assets/concert-one.ttf'
+
+	container = Container(
+		size=(400, 400),
+		padding=(20, 20, 20, 20),
+		children=[
+			Box(
+				relativeSizeAxes=Axes.BOTH,
+				size=(1, 1),
+				colour=(0, 0, 0),
+			),
+			Text(
+				fontPath=font,
+				textColour=(255, 0, 0),
+				textSize=20,
+				text='top left',
+			),
+			Text(
+				anchor=Anchor.TOP_RIGHT,
+				origin=Anchor.TOP_RIGHT,
+				fontPath=font,
+				textColour=(0, 255, 0),
+				textSize=18,
+				text='top right',
+			),
+			Text(
+				anchor=Anchor.BOTTOM_LEFT,
+				origin=Anchor.BOTTOM_LEFT,
+				fontPath=font,
+				textColour=(0, 0, 255),
+				textSize=16,
+				text='bottom left',
+			),
+			Text(
+				anchor=Anchor.BOTTOM_RIGHT,
+				origin=Anchor.BOTTOM_RIGHT,
+				fontPath=font,
+				textColour=(255, 255, 0),
+				textSize=14,
+				text='bottom right',
+			),
+			Text(
+				anchor=Anchor.CENTER,
+				origin=Anchor.CENTER,
+				fontPath=font,
+				textColour=(0, 255, 255),
+				textSize=30,
+				text='hello, world!',
+			),
+		],
+	)
+
+	container.render().save('tests/text_test.png')
+
 if __name__ == '__main__':
 	container_test()
 	margin_padding_test()
 	masking_test()
 	component_test()
 	texture_test()
+	text_test()
