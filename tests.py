@@ -279,9 +279,10 @@ def texture_test():
 		size=(400, 400),
 		children=[
 			Texture(
-				relativeSizeAxes=Axes.BOTH,
-				size=(1, 1),
+				anchor=Anchor.CENTER,
+				origin=Anchor.CENTER,
 				image=image,
+				sizeToImage=True,
 			),
 			Texture(
 				relativeSizeAxes=Axes.BOTH,

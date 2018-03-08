@@ -336,8 +336,9 @@ class Box(Drawable):
 A type of <Drawable> that draws an <Image>.
 """
 class Texture(Drawable):
-	def __init__(self, **kwargs):
+	def __init__(self, sizeToImage=False, **kwargs):
 		self._image = None
+		self.sizeToImage = sizeToImage
 
 		super(Texture, self).__init__(**kwargs)
 
@@ -356,6 +357,9 @@ class Texture(Drawable):
 	@image.setter
 	def image(self, value):
 		self._image = value
+
+		if self.sizeToImage:
+			self.size = value.size
 
 	def render(self):
 		return self.image.resize(round_tuple_values(self.draw_size), Image.ANTIALIAS)
