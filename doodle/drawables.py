@@ -2,16 +2,13 @@
 from enum import Flag, auto
 from PIL import Image
 
+from .utils import round_tuple_values, paste_image
+
 # todo: only recalculate draw/layout size/position when values change, not on every get
 
-def _round_tuple_values(inputTuple):
-	return tuple(round(v) for v in inputTuple)
-
-def _paste_image(background, foreground, position):
-	temp = Image.new('RGBA', background.size, (255, 255, 255, 0))
-	temp.paste(foreground, position)
-	return Image.alpha_composite(background, temp)
-
+"""
+Anything that can be drawn onto an <Image>.
+"""
 class Drawable:
 	def __init__(self, width=0, height=0, x=0, y=0, **kwargs):
 		self.parent = None
@@ -27,6 +24,14 @@ class Drawable:
 
 	@property
 	def width(self):
+		"""
+	    The X value of <size>.
+
+	    :getter: Returns the X value of <size>.
+	    :setter: Sets the X value of <size>.
+	    :type: int or float
+	    """
+
 		return self.size[0]
 
 	@width.setter
@@ -35,6 +40,14 @@ class Drawable:
 
 	@property
 	def height(self):
+		"""
+	    The Y value of <size>.
+
+	    :getter: Returns the Y value of <size>.
+	    :setter: Sets the Y value of <size>.
+	    :type: int or float
+	    """
+
 		return self.size[1]
 
 	@height.setter
@@ -43,6 +56,14 @@ class Drawable:
 
 	@property
 	def x(self):
+		"""
+	    The X value of <position>.
+
+	    :getter: Returns the X value of <position>.
+	    :setter: Sets the X value of <position>.
+	    :type: int
+	    """
+
 		return self.position[0]
 
 	@x.setter
@@ -51,6 +72,14 @@ class Drawable:
 
 	@property
 	def y(self):
+		"""
+	    The Y value of <position>.
+
+	    :getter: Returns the Y value of <position>.
+	    :setter: Sets the Y value of <position>.
+	    :type: int
+	    """
+
 		return self.position[1]
 
 	@y.setter
@@ -59,6 +88,13 @@ class Drawable:
 
 	@property
 	def draw_size(self):
+		"""
+		The size in pixels that this drawable will be drawn.
+		
+		:getter: Returns the draw size.
+		:type: (int, int)
+		"""
+
 		size = self.size
 
 		if self.relativeSizeAxes is not Axes.NONE:
@@ -79,6 +115,13 @@ class Drawable:
 
 	@property
 	def draw_position(self):
+		"""
+		The coordinates in pixels of <draw_size>, relative to <parent>.
+		
+		:getter: Returns the draw position.
+		:type: (int, int)
+		"""
+
 		position = self.position
 
 		if self.parent is not None:
@@ -131,19 +174,41 @@ class Drawable:
 
 	@property
 	def layout_size(self):
+		"""
+		The size in pixels of this drawable.
+		
+		:getter: Returns the layout size.
+		:type: (int, int)
+		"""
+
 		s = self.draw_size
 
 		return (s[0] + (self.margin[2] + self.margin[3]), s[1] + (self.margin[0] + self.margin[1]))
 
 	@property
 	def layout_position(self):
+		"""
+		The coordinates in pixels of <layout_size>, relative to <parent>.
+		
+		:getter: Returns the layout position.
+		:type: (int, int)
+		"""
+
 		p = self.draw_position
 
 		return (p[0] - self.margin[2], p[1] - self.margin[0])
 
+	"""
+	Render this drawable into an <Image>.
+
+	:returns: This drawable rendered into an <Image>.
+	"""
 	def render(self):
 		raise NotImplementedError('Drawable subclasses must implement render')
 
+"""
+A type of <Drawable> that can have children <Drawable>s.
+"""
 class Container(Drawable):
 	def __init__(self, children=[], **kwargs):
 		self.padding = (0, 0, 0, 0)
@@ -157,18 +222,42 @@ class Container(Drawable):
 
 	@property
 	def children_size(self):
+		"""
+		The size in pixels that the children of this container are allowed to occupy.
+		
+		:getter: Returns the children size.
+		:type: (int, int)
+		"""
+
 		s = self.draw_size
 
 		return (s[0] - (self.padding[2] + self.padding[3]), s[1] - (self.padding[0] + self.padding[1]))
 
 	@property
 	def children_position(self):
+		"""
+		The coordinates in pixel of <children_size>, relative to <parent>.
+		
+		:getter: Returns the children size.
+		:type: (int, int)
+		"""
+
 		p = self.draw_position
 
 		return (self.padding[2], self.padding[0])
 
 	@property
 	def render_size(self):
+		"""
+		The size in pixels of this container when being rendered.
+
+		This is specially added for <masking> so we can easily climb the
+		parent tree, and shouldn't be used for anything else.
+		
+		:getter: Returns the render size.
+		:type: (int, int)
+		"""
+
 		if not self.masking and self.parent:
 			return self.parent.render_size
 		else:
@@ -176,6 +265,13 @@ class Container(Drawable):
 
 	@property
 	def render_position(self):
+		"""
+		The coordinates in pixels of <render_size>, relative to <parent>.
+		
+		:getter: Returns the render position.
+		:type: (int, int)
+		"""
+
 		if not self.masking:
 			if self.parent:
 				return [a + b for a, b in zip(self.parent.render_position, self.draw_position)]
@@ -184,10 +280,21 @@ class Container(Drawable):
 		else:
 			return self.draw_position
 
+	"""
+	Add a child view.
+
+	:param child: The <Drawable> to add.
+	"""
 	def add(self, child):
 		child.parent = self
 		self.children.append(child)
 
+	"""
+	Remove a child view.
+
+	:param child: The <Drawable> to remove.
+	:raises ValueError: If <child> is not in this containers children.
+	"""
 	def remove(self, child):
 		if child.parent is not self:
 			raise ValueError('cannot remove a child that is not in this Container')
@@ -196,7 +303,7 @@ class Container(Drawable):
 		self.children.remove(child)
 
 	def render(self):
-		container = Image.new('RGBA', _round_tuple_values(self.render_size), (255, 255, 255, 0))
+		container = Image.new('RGBA', round_tuple_values(self.render_size), (255, 255, 255, 0))
 
 		for child in self.children:
 			if self.masking and (self.parent and self.parent.masking):
@@ -207,18 +314,24 @@ class Container(Drawable):
 				else:
 					position = [a + b for a, b in zip(self.render_position, child.draw_position)]
 
-			container = _paste_image(container, child.render(), _round_tuple_values(position))
+			container = paste_image(container, child.render(), round_tuple_values(position))
 
 		return container
 
+"""
+A type of <Drawable> that draws as a box with a colour.
+"""
 class Box(Drawable):
 	def __init__(self, colour, **kwargs):
 		super(Box, self).__init__(**kwargs)
 		self.colour = colour
 
 	def render(self):
-		return Image.new('RGB', _round_tuple_values(self.draw_size), self.colour)
+		return Image.new('RGB', round_tuple_values(self.draw_size), self.colour)
 
+"""
+A relative point in a box.
+"""
 class Anchor(Flag):
 	X_LEFT = auto()
 	X_CENTER = auto()
@@ -240,6 +353,9 @@ class Anchor(Flag):
 	BOTTOM_CENTER = X_CENTER | Y_BOTTOM
 	BOTTOM_RIGHT = X_RIGHT | Y_BOTTOM
 
+"""
+Two dimensional axes.
+"""
 class Axes(Flag):
 	NONE = 0
 	X = auto()
