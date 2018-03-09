@@ -369,7 +369,7 @@ def drawing_test():
 			'value_four': 4,
 		},
 		'value_five': 5,
-		'switch_value': 60,
+		'switch_value': 90,
 	}
 
 	drawing = Drawing('tests/assets/drawing.xml', values)

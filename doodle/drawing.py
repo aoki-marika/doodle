@@ -263,7 +263,9 @@ class SwitchElement(ContainerElement):
 				children = self.xml.getchildren()
 				children = [c for c in children if (c == option.xml and c.tag == 'option') or c.tag != 'option']
 
-				self.add(element_from_xml(option.element), children.index(option.xml))
+				element = element_from_xml(option.element)
+				self.add(element, children.index(option.xml))
+				element.load(drawing)
 				break
 
 """

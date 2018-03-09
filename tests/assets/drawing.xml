@@ -19,7 +19,7 @@
 		<box relative-size-axes="both" width="1" height="1" colour="000000"/>
 		<progress value="{switch_value}" max="100" progress-axes="y" anchor="bottom-right" origin="bottom-right" relative-size-axes="both" width="1" height="1">
 			<switch value="{switch_value}" relative-size-axes="both" width="1" height="1">
-				<option operator="&gt;=" value="70"><box relative-size-axes="both" width="1" height="1" colour="00ff00"/></option>
+				<option operator="&gt;=" value="70"><texture file="lenna.png" relative-size-axes="both" width="1" height="1"/></option>
 				<option operator="&lt;=" value="70"><box relative-size-axes="both" width="1" height="1" colour="ff0000"/></option>
 			</switch>
 			<text anchor="top-center" origin="top-center" font="concert-one.ttf" font-size="10" colour="000000">{switch_value}%</text>
