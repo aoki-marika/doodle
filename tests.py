@@ -1,5 +1,5 @@
 
-from doodle import Drawable, Container, Box, Texture, Text, Anchor, Axes, Drawing
+from doodle import Drawable, Container, Box, Texture, Text, SpriteText, Anchor, Axes, Drawing
 
 from PIL import Image
 
@@ -358,6 +358,51 @@ def text_test():
 
 	container.render().save('tests/text_test.png')
 
+def sprite_text_test():
+	fontPath = 'tests/assets/image-font'
+
+	container = Container(
+		size=(400, 400),
+		padding=(20, 20, 20, 20),
+		children=[
+			Box(
+				relativeSizeAxes=Axes.BOTH,
+				size=(1, 1),
+				colour=(0, 0, 0),
+			),
+			SpriteText(
+				fontPath=fontPath,
+				text='0/0',
+			),
+			SpriteText(
+				anchor=Anchor.TOP_RIGHT,
+				origin=Anchor.TOP_RIGHT,
+				fontPath=fontPath,
+				text='60/0',
+			),
+			SpriteText(
+				anchor=Anchor.CENTER,
+				origin=Anchor.CENTER,
+				fontPath=fontPath,
+				text='50/60',
+			),
+			SpriteText(
+				anchor=Anchor.BOTTOM_LEFT,
+				origin=Anchor.BOTTOM_LEFT,
+				fontPath=fontPath,
+				text='0/60',
+			),
+			SpriteText(
+				anchor=Anchor.BOTTOM_RIGHT,
+				origin=Anchor.BOTTOM_RIGHT,
+				fontPath=fontPath,
+				text='60/50',
+			),
+		],
+	)
+
+	container.render().save('tests/sprite_text_test.png')
+
 def drawing_test():
 	values = {
 		'key_one': {
@@ -382,4 +427,5 @@ if __name__ == '__main__':
 	# component_test()
 	# texture_test()
 	# text_test()
-	drawing_test()
+	sprite_text_test()
+	# drawing_test()

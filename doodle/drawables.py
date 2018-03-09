@@ -1,6 +1,8 @@
 
 import os
 
+import xml.etree.ElementTree as ET
+
 from enum import Flag, auto
 from PIL import Image
 from PIL import ImageDraw
@@ -331,7 +333,7 @@ class Container(Drawable):
 A type of <Drawable> that draws as a box with a colour.
 """
 class Box(Drawable):
-	def __init__(self, colour=(0, 0, 0), **kwargs):
+	def __init__(self, colour=(255, 255, 255), **kwargs):
 		super(Box, self).__init__(**kwargs)
 		self.colour = colour
 
@@ -377,7 +379,7 @@ You should not set the size on this drawable as it automatically calculates its 
 """
 class Text(Drawable):
 	# todo: handle empty strings crashing when rendering
-	def __init__(self, fontPath='', textColour=(0, 0, 0), textSize=0, text='', **kwargs):
+	def __init__(self, fontPath='', textColour=(255, 255, 255), textSize=0, text='', **kwargs):
 		super(Text, self).__init__(**kwargs)
 
 		# init the parameters so we dont crash when calling <apply_size> without all the parameters set
@@ -397,7 +399,7 @@ class Text(Drawable):
 		The path of the font that this text should use when drawing text.
 
 		:getter: Returns this texts font path.
-		:setter: Sets this texts font font.
+		:setter: Sets this texts font path.
 		:type: string
 		"""
 
@@ -469,6 +471,124 @@ class Text(Drawable):
 		draw.text((0, 0), self.text, self.textColour, font=self.get_font())
 
 		return temp
+
+"""
+A type of <Drawable> that can draw text with image files.
+"""
+class SpriteText(Drawable):
+	def __init__(self, fontPath='', text='', **kwargs):
+		super(SpriteText, self).__init__(**kwargs)
+
+		# same as <Text>, set the values beforehand so we can reference them in <update_size> without everything set
+		self.font = None
+		self._fontPath = None
+		self._text = None
+
+		self.fontPath = fontPath
+		self.text = text
+
+	@property
+	def fontPath(self):
+		"""
+		The path to the sprite font that this sprite text should use.
+
+		:getter: Returns this sprite texts font path.
+		:setter: Sets this sprite texts font path.
+		:type: string
+		"""
+
+		return self._fontPath
+
+	@fontPath.setter
+	def fontPath(self, value):
+		self._fontPath = value
+		self.font = SpriteFont(self.fontPath)
+		self.update_size()
+
+	@property
+	def text(self):
+		"""
+		The text for this sprite text to display.
+
+		:getter: Returns this sprite texts text.
+		:setter: Sets this sprite texts text.
+		:type: string
+		"""
+
+		return self._text
+
+	@text.setter
+	def text(self, value):
+		self._text = value
+		self.update_size()
+
+	def update_size(self):
+		if self.text and self.font:
+			self.size = self.font.get_size(self.text)
+
+	def render(self):
+		return self.font.get_image(self.text)
+
+"""
+A font for <SpriteText>.
+"""
+class SpriteFont:
+	"""
+	:param path: The path to the sprite fonts folder.
+	"""
+	def __init__(self, path):
+		file = os.path.join(path, 'font.xml')
+		if os.path.exists(file):
+			tree = ET.parse(file)
+			root = tree.getroot()
+
+			if root.tag == 'font':
+				if 'width' in root.attrib and 'height' in root.attrib and 'spacing' in root.attrib:
+					self.characterSize = (int(root.get('width')), int(root.get('height')))
+					self.characterSpacing = int(root.get('spacing'))
+					self.characterFiles = dict((n.get('value'), n.text) for n in root.iter('character'))
+					self.path = path
+				else:
+					raise ValueError('the root <font> node in font.xml must specify \'width\', \'height\', and \'spacing\' attributes')
+			else:
+				raise ValueError('font.xml must contain a root <font> node')
+		else:
+			raise ValueError(f'could not find a font.xml in \'{file}\'')
+
+	"""
+	Get the size of a given string if it were drawn with this sprite font.
+
+	:param text: The text to get the size of.
+	:returns: The size of <text> in this sprite font.
+	"""
+	def get_size(self, text):
+		return ((self.characterSize[0] + self.characterSpacing) * len(str(text)) + abs(self.characterSpacing), self.characterSize[1])
+
+	"""
+	Get an <Image> for text drawn with this sprite font.
+
+	:param text: The text to draw.
+	:returns: An <Image> with <text> drawn with this sprite font.
+	"""
+	def get_image(self, text):
+		image = Image.new('RGBA', self.get_size(text), (255, 255, 255, 0))
+
+		lastX = 0
+		for char in text:
+			file = f'{char}.png'
+
+			if char in self.characterFiles:
+				file = self.characterFiles[char]
+
+			file = os.path.join(self.path, file)
+
+			if os.path.exists(file):
+				image = paste_image(image, Image.open(file), (lastX, 0))
+				lastX += (self.characterSize[0] + self.characterSpacing)
+			else:
+				raise ValueError(f'could not find file \'{file}\' for character \'{char}\'')
+
+		return image
 
 """
 A relative point in a box.

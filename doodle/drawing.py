@@ -4,7 +4,7 @@ import os
 
 import xml.etree.ElementTree as ET
 
-from doodle import Drawable, Container, Box, Texture, Text, Anchor, Axes
+from doodle import Drawable, Container, Box, Texture, Text, SpriteText, Anchor, Axes
 from PIL import Image
 
 """
