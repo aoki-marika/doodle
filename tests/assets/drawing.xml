@@ -1,4 +1,5 @@
 <drawing width="400" height="400">
+	<texture file="lenna.png" anchor="center" origin="center" size-to-image="true" />
 	<container relative-size-axes="both" width="1" height="1" padding-top="20" padding-bottom="20" padding-left="20">
 		<box relative-size-axes="both" width="0.5" height="0.5" colour="ff0000"/>
 		<box anchor="bottom-left" origin="bottom-left" relative-size-axes="both" width="0.5" height="0.5" colour="00ff00"/>

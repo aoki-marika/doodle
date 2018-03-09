@@ -4,6 +4,7 @@ import os
 import xml.etree.ElementTree as ET
 
 from doodle import Drawable, Container, Box, Texture, Text, Anchor, Axes
+from PIL import Image
 
 """
 Get an <Anchor> from a string.
@@ -66,30 +67,14 @@ def colour_from_string(string):
 	string = string.lstrip('#')
 	return tuple(int(string[i : i + 2], 16) for i in (0, 2, 4))
 
-class Drawing:
-	def __init__(self, file):
-		if os.path.exists(file):
-			tree = ET.parse(file)
-			root = tree.getroot()
+"""
+Get a <Boolean> from a string.
 
-			if root.tag == 'drawing':
-				if 'width' in root.attrib and 'height' in root.attrib:
-					self.container = ContainerElement(root)
-				else:
-					raise ValueError('drawing files must specify a width and height in the root <drawing> node')
-			else:
-				raise ValueError('drawing files must have a root <drawing> node')
-		else:
-			raise ValueError('file does not exist')
-
-	"""
-	Render this drawing into an image.
-
-	:param object: The object to use for getting values in the drawing.
-	:returns: This drawing rendered into an <Image>.
-	"""
-	def render(self, object):
-		return self.container.render()
+:param string: The string to parse.
+:returns: Whether <string> is 'true' or not.
+"""
+def bool_from_string(string):
+	return string.lower() == 'true'
 
 """
 Get an <Element> from an XML node.
@@ -101,6 +86,7 @@ def element_from_xml(xml):
 	elements = {
 		'container': ContainerElement,
 		'box': BoxElement,
+		'texture': TextureElement,
 	}
 
 	return elements[xml.tag](xml)
@@ -133,6 +119,14 @@ class Element(Drawable):
 				float(xml.get('margin-right') or 0),
 			)
 
+	"""
+	Load this elements attributes that are dependant on a <Drawing>.
+
+	:param drawing: The <Drawing> to load with.
+	"""
+	def load(self, drawing):
+		return
+
 """
 A <Container> variant of <Element>.
 """
@@ -155,6 +149,10 @@ class ContainerElement(Element, Container):
 		for node in xml:
 			self.add(element_from_xml(node))
 
+	def load(self, drawing):
+		for child in self.children:
+			child.load(drawing)
+
 """
 A <Box> variant of <Element>.
 """
@@ -164,3 +162,41 @@ class BoxElement(Element, Box):
 		super(BoxElement, self).__init__(xml)
 
 		self.colour = colour_from_string(xml.get('colour') or '')
+
+"""
+A <Texture> variant of <Element>.
+"""
+class TextureElement(Element, Texture):
+	def __init__(self, xml):
+		super(Texture, self).__init__()
+		super(TextureElement, self).__init__(xml)
+
+		self.file = xml.get('file')
+		self.sizeToImage = bool_from_string(xml.get('size-to-image') or '')
+
+	def load(self, drawing):
+		self.image = Image.open(os.path.join(drawing.path, self.file))
+
+"""
+A special <ContainerElement> that loads a file.
+"""
+class Drawing(ContainerElement):
+	"""
+	:param file: The path to the file to load.
+	"""
+	def __init__(self, file):
+		if os.path.exists(file):
+			tree = ET.parse(file)
+			root = tree.getroot()
+
+			if root.tag == 'drawing':
+				if 'width' in root.attrib and 'height' in root.attrib:
+					super(Drawing, self).__init__(root)
+					self.path = os.path.dirname(file)
+					self.load(self)
+				else:
+					raise ValueError('drawing files must specify a width and height in the root <drawing> node')
+			else:
+				raise ValueError('drawing files must have a root <drawing> node')
+		else:
+			raise ValueError('file does not exist')

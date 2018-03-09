@@ -360,7 +360,7 @@ def text_test():
 
 def drawing_test():
 	drawing = Drawing('tests/assets/drawing.xml')
-	drawing.render(None).save('tests/drawing_test.png')
+	drawing.render().save('tests/drawing_test.png')
 
 if __name__ == '__main__':
 	# container_test()
