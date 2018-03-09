@@ -141,9 +141,14 @@ class Element(Drawable):
 		self.origin = anchor_from_string(xml.get('origin')) or Anchor.TOP_LEFT
 		self.x = float(xml.get('x') or 0)
 		self.y = float(xml.get('y') or 0)
-		self.width = float(xml.get('width') or 0)
-		self.height = float(xml.get('height') or 0)
 		self.relativeSizeAxes = axes_from_string(xml.get('relative-size-axes')) or Axes.NONE
+
+		if 'size' in xml.attrib:
+			s = float(xml.get('size'))
+			self.size = (s, s)
+		else:
+			self.width = float(xml.get('width') or 0)
+			self.height = float(xml.get('height') or 0)
 
 		if 'margin' in xml.attrib:
 			m = float(xml.get('margin'))

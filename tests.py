@@ -414,7 +414,7 @@ def drawing_test():
 			'value_four': 4,
 		},
 		'value_five': 5,
-		'switch_value': 75,
+		'switch_value': 80,
 	}
 
 	drawing = Drawing('tests/assets/drawing.xml', values)
