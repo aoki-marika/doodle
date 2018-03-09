@@ -176,6 +176,7 @@ class TextureElement(Element, Texture):
 		self.sizeToImage = bool_from_string(xml.get('size-to-image') or '')
 
 	def load(self, drawing):
+		self.file = drawing.format_string(self.file)
 		self.image = Image.open(os.path.join(drawing.path, self.file))
 
 """
@@ -192,6 +193,7 @@ class TextElement(Element, Text):
 		self.text = xml.text
 
 	def load(self, drawing):
+		self.text = drawing.format_string(self.text)
 		self.fontPath = os.path.join(drawing.path, self.font)
 
 """
@@ -200,8 +202,9 @@ A special <ContainerElement> that loads a file.
 class Drawing(ContainerElement):
 	"""
 	:param file: The path to the file to load.
+	:param values: The object to get values from when an <Element> is asking for values.
 	"""
-	def __init__(self, file):
+	def __init__(self, file, values):
 		if os.path.exists(file):
 			tree = ET.parse(file)
 			root = tree.getroot()
@@ -210,6 +213,8 @@ class Drawing(ContainerElement):
 				if 'width' in root.attrib and 'height' in root.attrib:
 					super(Drawing, self).__init__(root)
 					self.path = os.path.dirname(file)
+					self.values = values
+
 					self.load(self)
 				else:
 					raise ValueError('drawing files must specify a width and height in the root <drawing> node')
@@ -217,3 +222,9 @@ class Drawing(ContainerElement):
 				raise ValueError('drawing files must have a root <drawing> node')
 		else:
 			raise ValueError('file does not exist')
+
+	def format_string(self, string):
+		if isinstance(self.values, dict):
+			return string.format(**self.values)
+		else:
+			return string.format(self.values)

@@ -8,5 +8,5 @@
 		<box relative-size-axes="both" width="1" height="0.5" colour="0000ff"/>
 		<box anchor="bottom-right" origin="bottom-right" relative-size-axes="both" width="1" height="0.5" colour="ff00ff"/>
 	</container>
-	<text anchor="center" origin="center" font="concert-one.ttf" font-size="20" colour="ffff00">hello, world!</text>
+	<text anchor="center" origin="center" font="concert-one.ttf" font-size="20" colour="ffff00">hello, {key_one[value_one]}{key_one[value_two]}{key_two[value_three]}{key_two[value_four]}{value_five} world!</text>
 </drawing>
