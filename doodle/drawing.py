@@ -255,18 +255,20 @@ class SwitchElement(ContainerElement):
 			try: sv = float(self.value)
 			except: sv = self.value
 
-			try: ov = float(option.value)
-			except: ov = option.value
+			for value in option.values:
+				try: ov = float(value)
+				except: ov = value
 
-			if option.operator(sv, ov):
-				# place the option at the correct index so that the elements before and after it are properly on top or below
-				children = self.xml.getchildren()
-				children = [c for c in children if (c == option.xml and c.tag == 'option') or c.tag != 'option']
+				if option.operator(sv, ov):
+					# place the option at the correct index so that the elements before and after it are properly on top or below
+					children = self.xml.getchildren()
+					children = [c for c in children if (c == option.xml and c.tag == 'option') or c.tag != 'option']
 
-				element = element_from_xml(option.element)
-				self.add(element, children.index(option.xml))
-				element.load(drawing)
-				break
+					element = element_from_xml(option.element)
+					self.add(element, children.index(option.xml))
+					element.load(drawing)
+
+					return
 
 """
 An option for a <SwitchElement>.
@@ -276,7 +278,7 @@ class SwitchOption:
 		self.xml = xml
 		self.element = xml[0]
 		self.operator = operator_from_string(xml.get('operator') or '==')
-		self.value = xml.get('value')
+		self.values = xml.get('value').split(', ')
 
 """
 A <ContainerElement> that can resize based on a value.
