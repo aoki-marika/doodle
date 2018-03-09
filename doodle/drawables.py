@@ -389,6 +389,7 @@ class Text(Drawable):
 		super(Text, self).__init__(**kwargs)
 
 		# init the parameters so we dont crash when calling <apply_size> without all the parameters set
+		self.font = None
 		self._fontPath = None
 		self.textColour = None
 		self._textSize = None
@@ -485,7 +486,7 @@ class Text(Drawable):
 		draw.text((0, 0), self.text, self.textColour, font=self.font)
 
 		if self.mode == TextMode.SQUISH:
-			s = self.draw_size
+			s = round_tuple_values(self.draw_size)
 			if temp.size[0] > s[0]:
 				temp = temp.resize((s[0], temp.size[1]), Image.ANTIALIAS)
 

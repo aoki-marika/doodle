@@ -4,7 +4,7 @@ import os
 
 import xml.etree.ElementTree as ET
 
-from doodle import Drawable, Container, Box, Texture, Text, SpriteText, Anchor, Axes
+from doodle import Drawable, Container, Box, Texture, Text, SpriteText, Anchor, Axes, TextMode
 from PIL import Image
 
 """
@@ -53,6 +53,28 @@ def axes_from_string(string):
 		string = string.lower()
 		if string in axes:
 			return axes[string]
+		else:
+			return None
+	else:
+		return None
+
+"""
+Get a <TextMode> from a string.
+
+:param string: The string to parse.
+:returns: A <TextMode> if <string> matched one, or <None> if not.
+"""
+def text_mode_from_string(string):
+	if string:
+		modes = {
+			'single-line': TextMode.SINGLE_LINE,
+			'squish': TextMode.SQUISH,
+			'wrap': TextMode.WRAP,
+		}
+
+		string = string.lower()
+		if string in modes:
+			return modes[string]
 		else:
 			return None
 	else:
@@ -230,14 +252,15 @@ class TextElement(Element, Text):
 		super(Text, self).__init__()
 		super(TextElement, self).__init__(xml)
 
-		self.font = xml.get('font')
+		self.relativeFontPath = xml.get('font')
 		self.textColour = colour_from_string(xml.get('colour') or '')
 		self.textSize = int(xml.get('font-size') or 0)
 		self.text = xml.text
+		self.mode = text_mode_from_string(xml.get('mode')) or TextMode.SINGLE_LINE
 
 	def load(self, drawing):
 		self.text = drawing.format_string(self.text)
-		self.fontPath = os.path.join(drawing.path, self.font)
+		self.fontPath = os.path.join(drawing.path, self.relativeFontPath)
 
 """
 A <SpriteText> variant of <Element>.
