@@ -384,7 +384,6 @@ When using <TextMode.SINGLE_LINE>, you should not change the width or height.
 When using <TextMode.SQUISH>, you should not change the height.
 """
 class Text(Drawable):
-	# todo: handle empty strings crashing when rendering
 	def __init__(self, fontPath='', textColour=(255, 255, 255), textSize=0, text='', mode=TextMode.SINGLE_LINE, **kwargs):
 		super(Text, self).__init__(**kwargs)
 
@@ -480,6 +479,18 @@ class Text(Drawable):
 				elif self.mode == TextMode.SQUISH:
 					self.size = (self.size[0], s[1])
 
+	@property
+	def draw_size(self):
+		size = super(Text, self).draw_size
+
+		# give the proper size when squishing so that anchor/origin still work properly
+		if self.mode == TextMode.SQUISH:
+			s = self.font.getsize(self.text)
+			if size[0] > s[0]:
+				size = (s[0], size[1])
+
+		return size
+
 	def render(self):
 		temp = Image.new('RGBA', self.font.getsize(self.text), (255, 255, 255, 0))
 		draw = ImageDraw.Draw(temp)
@@ -487,8 +498,7 @@ class Text(Drawable):
 
 		if self.mode == TextMode.SQUISH:
 			s = round_tuple_values(self.draw_size)
-			if temp.size[0] > s[0]:
-				temp = temp.resize((s[0], temp.size[1]), Image.ANTIALIAS)
+			temp = temp.resize((s[0], temp.size[1]), Image.ANTIALIAS)
 
 		return temp
 

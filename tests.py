@@ -324,6 +324,8 @@ def text_test():
 						colour=(255, 255, 255),
 					),
 					Text(
+						anchor=Anchor.TOP_CENTER,
+						origin=Anchor.TOP_CENTER,
 						relativeSizeAxes=Axes.X,
 						width=1,
 						fontPath=font,
@@ -333,8 +335,8 @@ def text_test():
 						mode=TextMode.SQUISH,
 					),
 					Text(
-						anchor=Anchor.BOTTOM_LEFT,
-						origin=Anchor.BOTTOM_LEFT,
+						anchor=Anchor.BOTTOM_CENTER,
+						origin=Anchor.BOTTOM_CENTER,
 						relativeSizeAxes=Axes.X,
 						width=1,
 						fontPath=font,
