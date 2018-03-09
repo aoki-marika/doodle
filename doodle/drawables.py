@@ -373,6 +373,25 @@ class Texture(Drawable):
 		return self.image.resize(round_tuple_values(self.draw_size), Image.ANTIALIAS)
 
 """
+Display modes for <Text>.
+"""
+class TextMode(Enum):
+	"""
+	Place the text on a single line, without transformations.
+	"""
+	SINGLE_LINE = auto()
+
+	"""
+	Squish the text to fit its size if it is too big to fit.
+	"""
+	SQUISH = auto()
+
+	"""
+	Wrap the text onto multiple lines to fit its size.
+	"""
+	WRAP = auto()
+
+"""
 A type of <Drawable> that can draw text with fonts.
 
 When using <TextMode.SINGLE_LINE>, you should not change the width or height.
@@ -619,25 +638,6 @@ class SpriteFont:
 				raise ValueError(f'could not find file \'{file}\' for character \'{char}\'')
 
 		return image
-
-"""
-Display modes for <Text>.
-"""
-class TextMode(Enum):
-	"""
-	Place the text on a single line, without transformations.
-	"""
-	SINGLE_LINE = auto()
-
-	"""
-	Squish the text to fit its size if it is too big to fit.
-	"""
-	SQUISH = auto()
-
-	"""
-	Wrap the text onto multiple lines to fit its size.
-	"""
-	WRAP = auto()
 
 """
 A relative point in a box.
