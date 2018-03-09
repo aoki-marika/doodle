@@ -372,11 +372,6 @@ class Texture(Drawable):
 	def render(self):
 		return self.image.resize(round_tuple_values(self.draw_size), Image.ANTIALIAS)
 
-class TextMode(Enum):
-	SINGLE_LINE = auto()
-	SQUISH = auto()
-	WRAP = auto()
-
 """
 A type of <Drawable> that can draw text with fonts.
 
@@ -624,6 +619,25 @@ class SpriteFont:
 				raise ValueError(f'could not find file \'{file}\' for character \'{char}\'')
 
 		return image
+
+"""
+Display modes for <Text>.
+"""
+class TextMode(Enum):
+	"""
+	Place the text on a single line, without transformations.
+	"""
+	SINGLE_LINE = auto()
+
+	"""
+	Squish the text to fit its size if it is too big to fit.
+	"""
+	SQUISH = auto()
+
+	"""
+	Wrap the text onto multiple lines to fit its size.
+	"""
+	WRAP = auto()
 
 """
 A relative point in a box.
