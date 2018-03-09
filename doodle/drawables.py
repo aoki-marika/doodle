@@ -3,7 +3,7 @@ import os
 
 import xml.etree.ElementTree as ET
 
-from enum import Flag, auto
+from enum import Enum, Flag, auto
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
@@ -375,18 +375,20 @@ class Texture(Drawable):
 """
 A type of <Drawable> that can draw text with fonts.
 
-You should not set the size on this drawable as it automatically calculates its size.
+When using <TextMode.SINGLE_LINE>, you should not change the width or height.
+When using <TextMode.SQUISH>, you should not change the height.
 """
 class Text(Drawable):
-	# todo: handle empty strings crashing when rendering
-	def __init__(self, fontPath='', textColour=(255, 255, 255), textSize=0, text='', **kwargs):
+	def __init__(self, fontPath='', textColour=(255, 255, 255), textSize=0, text='', mode=TextMode.SINGLE_LINE, **kwargs):
 		super(Text, self).__init__(**kwargs)
 
 		# init the parameters so we dont crash when calling <apply_size> without all the parameters set
+		self.font = None
 		self._fontPath = None
 		self.textColour = None
 		self._textSize = None
 		self._text = None
+		self.mode = mode
 
 		self.fontPath = fontPath
 		self.textColour = textColour
@@ -408,6 +410,7 @@ class Text(Drawable):
 	@fontPath.setter
 	def fontPath(self, value):
 		self._fontPath = value
+		self.update_font()
 		self.apply_size()
 
 	@property
@@ -425,6 +428,7 @@ class Text(Drawable):
 	@textSize.setter
 	def textSize(self, value):
 		self._textSize = value
+		self.update_font()
 		self.apply_size()
 
 	@property
@@ -449,10 +453,10 @@ class Text(Drawable):
 
 	:returns: An <ImageFont>.
 	"""
-	def get_font(self):
+	def update_font(self):
 		if self.fontPath and self.textSize:
 			if os.path.exists(self.fontPath):
-				return ImageFont.truetype(self.fontPath, self.textSize)
+				self.font = ImageFont.truetype(self.fontPath, self.textSize)
 		else:
 			return None
 
@@ -461,14 +465,35 @@ class Text(Drawable):
 	"""
 	def apply_size(self):
 		if self.text:
-			font = self.get_font()
-			if font:
-				self.size = font.getsize(self.text)
+			# wrap does not use text size, so dont bother calculating it
+			if self.font and self.mode is not TextMode.WRAP:
+				s = self.font.getsize(self.text)
+
+				if self.mode == TextMode.SINGLE_LINE:
+					self.size = s
+				elif self.mode == TextMode.SQUISH:
+					self.size = (self.size[0], s[1])
+
+	@property
+	def draw_size(self):
+		size = super(Text, self).draw_size
+
+		# give the proper size when squishing so that anchor/origin still work properly
+		if self.mode == TextMode.SQUISH:
+			s = self.font.getsize(self.text)
+			if size[0] > s[0]:
+				size = (s[0], size[1])
+
+		return size
 
 	def render(self):
-		temp = Image.new('RGBA', self.draw_size, (255, 255, 255, 0))
+		temp = Image.new('RGBA', self.font.getsize(self.text), (255, 255, 255, 0))
 		draw = ImageDraw.Draw(temp)
-		draw.text((0, 0), self.text, self.textColour, font=self.get_font())
+		draw.text((0, 0), self.text, self.textColour, font=self.font)
+
+		if self.mode == TextMode.SQUISH:
+			s = round_tuple_values(self.draw_size)
+			temp = temp.resize((s[0], temp.size[1]), Image.ANTIALIAS)
 
 		return temp
 
@@ -594,6 +619,25 @@ class SpriteFont:
 				raise ValueError(f'could not find file \'{file}\' for character \'{char}\'')
 
 		return image
+
+"""
+Display modes for <Text>.
+"""
+class TextMode(Enum):
+	"""
+	Place the text on a single line, without transformations.
+	"""
+	SINGLE_LINE = auto()
+
+	"""
+	Squish the text to fit its size if it is too big to fit.
+	"""
+	SQUISH = auto()
+
+	"""
+	Wrap the text onto multiple lines to fit its size.
+	"""
+	WRAP = auto()
 
 """
 A relative point in a box.

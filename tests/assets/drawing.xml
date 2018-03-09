@@ -25,6 +25,8 @@
 					<box anchor="center" origin="center" relative-size-axes="both" size="0.5" colour="00ff00"/>
 				</option>
 				<box anchor="center" origin="center" relative-size-axes="both" size="0.25" colour="00ffff"/>
+				<text relative-size-axes="x" width="1" font="concert-one.ttf" font-size="15" mode="squish" colour="000000">squuuuuuuuuuuuuuish</text>
+				<text anchor="bottom-center" origin="bottom-center" relative-size-axes="x" width="1" font="concert-one.ttf" font-size="15" mode="squish" colour="000000">not squished</text>
 			</switch>
 		</container>
 	</progress>

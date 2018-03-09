@@ -1,5 +1,5 @@
 
-from doodle import Drawable, Container, Box, Texture, Text, SpriteText, Anchor, Axes, Drawing
+from doodle import Drawable, Container, Box, Texture, Text, SpriteText, Anchor, Axes, Drawing, TextMode
 
 from PIL import Image
 
@@ -315,11 +315,37 @@ def text_test():
 				size=(1, 1),
 				colour=(0, 0, 0),
 			),
-			Text(
-				fontPath=font,
-				textColour=(255, 0, 0),
-				textSize=20,
-				text='top left',
+			Container(
+				size=(150, 40),
+				children=[
+					Box(
+						relativeSizeAxes=Axes.BOTH,
+						size=(1, 1),
+						colour=(255, 255, 255),
+					),
+					Text(
+						anchor=Anchor.TOP_CENTER,
+						origin=Anchor.TOP_CENTER,
+						relativeSizeAxes=Axes.X,
+						width=1,
+						fontPath=font,
+						textColour=(255, 0, 0),
+						textSize=15,
+						text='top left squish to fit, squuuuish',
+						mode=TextMode.SQUISH,
+					),
+					Text(
+						anchor=Anchor.BOTTOM_CENTER,
+						origin=Anchor.BOTTOM_CENTER,
+						relativeSizeAxes=Axes.X,
+						width=1,
+						fontPath=font,
+						textColour=(255, 0, 0),
+						textSize=15,
+						text='top left squish fits',
+						mode=TextMode.SQUISH,
+					),
+				],
 			),
 			Text(
 				anchor=Anchor.TOP_RIGHT,
