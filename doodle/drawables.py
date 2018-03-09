@@ -325,7 +325,7 @@ class Container(Drawable):
 A type of <Drawable> that draws as a box with a colour.
 """
 class Box(Drawable):
-	def __init__(self, colour, **kwargs):
+	def __init__(self, colour=(0, 0, 0), **kwargs):
 		super(Box, self).__init__(**kwargs)
 		self.colour = colour
 
