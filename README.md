@@ -1,5 +1,5 @@
 # Doodle
-A python image drawing framework.
+A python framework for creating static images from dynamic content.
 
 # Requirements
 * Python 3.6.4
