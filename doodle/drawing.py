@@ -115,6 +115,7 @@ def element_from_xml(xml):
 		'texture': TextureElement,
 		'text': TextElement,
 		'switch': SwitchElement,
+		'progress': ProgressElement,
 	}
 
 	special = [
@@ -238,11 +239,14 @@ A <ContainerElement> that hides/shows <Drawable>s depending on a value.
 class SwitchElement(ContainerElement):
 	def __init__(self, xml):
 		super(SwitchElement, self).__init__(xml)
+
 		self.xml = xml
 		self.value = xml.get('value')
 		self.options = [SwitchOption(n) for n in xml.iter('option')]
 
 	def load(self, drawing):
+		super(SwitchElement, self).load(drawing)
+
 		self.value = drawing.format_string(self.value)
 
 		for option in self.options:
@@ -271,6 +275,27 @@ class SwitchOption:
 		self.element = xml[0]
 		self.operator = operator_from_string(xml.get('operator') or '==')
 		self.value = xml.get('value')
+
+"""
+A <ContainerElement> that can resize based on a value.
+"""
+class ProgressElement(ContainerElement):
+	def __init__(self, xml):
+		super(ProgressElement, self).__init__(xml)
+
+		self.axes = axes_from_string(xml.get('progress-axes') or 'none')
+		self.value = xml.get('value')
+		self.max = float(xml.get('max') or 100)
+
+	def load(self, drawing):
+		super(ProgressElement, self).load(drawing)
+
+		self.value = float(drawing.format_string(self.value)) / self.max
+
+		if self.axes & Axes.X:
+			self.width = self.value
+		if self.axes & Axes.Y:
+			self.height = self.value
 
 """
 A special <ContainerElement> that loads a file.

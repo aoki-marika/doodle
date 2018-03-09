@@ -8,11 +8,21 @@
 		<box relative-size-axes="both" width="1" height="0.5" colour="0000ff"/>
 		<box anchor="bottom-right" origin="bottom-right" relative-size-axes="both" width="1" height="0.5" colour="ff00ff"/>
 	</container>
-	<text anchor="center" origin="center" font="concert-one.ttf" font-size="20" colour="ffff00">hello, {key_one[value_one]}{key_one[value_two]}{key_two[value_three]}{key_two[value_four]}{value_five} world!</text>
+	<text anchor="center" origin="center" font="concert-one.ttf" font-size="20" colour="ffff00">hello, {key_one[value_one]}{value_five:04d}{key_two[value_three]} world!</text>
 	<switch value="{switch_value}" anchor="bottom-right" origin="bottom-right" width="100" height="100">
 		<box relative-size-axes="both" width="1" height="1" colour="ffff00"/>
 		<option operator="&gt;=" value="70"><box relative-size-axes="both" width="0.5" height="0.5" colour="00ff00"/></option>
 		<option operator="&lt;=" value="70"><box relative-size-axes="both" width="0.5" height="0.5" colour="ff0000"/></option>
 		<box relative-size-axes="both" width="0.25" height="0.25" colour="00ffff"/>
 	</switch>
+	<container anchor="bottom-right" origin="bottom-right" width="20" height="100">
+		<box relative-size-axes="both" width="1" height="1" colour="000000"/>
+		<progress value="{switch_value}" max="100" progress-axes="y" anchor="bottom-right" origin="bottom-right" relative-size-axes="both" width="1" height="1">
+			<switch value="{switch_value}" relative-size-axes="both" width="1" height="1">
+				<option operator="&gt;=" value="70"><box relative-size-axes="both" width="1" height="1" colour="00ff00"/></option>
+				<option operator="&lt;=" value="70"><box relative-size-axes="both" width="1" height="1" colour="ff0000"/></option>
+			</switch>
+			<text anchor="top-center" origin="top-center" font="concert-one.ttf" font-size="10" colour="000000">{switch_value}%</text>
+		</progress>
+	</container>
 </drawing>
