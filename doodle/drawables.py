@@ -502,8 +502,13 @@ class SpriteText(Drawable):
 	@fontPath.setter
 	def fontPath(self, value):
 		self._fontPath = value
-		self.font = SpriteFont(self.fontPath)
-		self.update_size()
+
+		if self.fontPath:
+			self.font = SpriteFont(self.fontPath)
+			self.update_size()
+		else:
+			self.font = None
+			self.size = (0, 0)
 
 	@property
 	def text(self):
@@ -553,7 +558,7 @@ class SpriteFont:
 			else:
 				raise ValueError('font.xml must contain a root <font> node')
 		else:
-			raise ValueError(f'could not find a font.xml in \'{file}\'')
+			raise ValueError(f'could not find a font.xml in \'{path}\'')
 
 	"""
 	Get the size of a given string if it were drawn with this sprite font.

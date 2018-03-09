@@ -114,6 +114,7 @@ def element_from_xml(xml):
 		'box': BoxElement,
 		'texture': TextureElement,
 		'text': TextElement,
+		'sprite-text': SpriteTextElement,
 		'switch': SwitchElement,
 		'progress': ProgressElement,
 	}
@@ -232,6 +233,21 @@ class TextElement(Element, Text):
 	def load(self, drawing):
 		self.text = drawing.format_string(self.text)
 		self.fontPath = os.path.join(drawing.path, self.font)
+
+"""
+A <SpriteText> variant of <Element>.
+"""
+class SpriteTextElement(Element, SpriteText):
+	def __init__(self, xml):
+		super(SpriteText, self).__init__()
+		super(SpriteTextElement, self).__init__(xml)
+
+		self.relativeFontPath = xml.get('font')
+		self.text = xml.text
+
+	def load(self, drawing):
+		self.text = drawing.format_string(self.text)
+		self.fontPath = os.path.join(drawing.path, self.relativeFontPath)
 
 """
 A <ContainerElement> that hides/shows <Drawable>s depending on a value.

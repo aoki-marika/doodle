@@ -26,4 +26,5 @@
 			<text anchor="top-center" origin="top-center" font="concert-one.ttf" font-size="10" colour="000000">{switch_value}%</text>
 		</progress>
 	</container>
+	<sprite-text anchor="top-right" origin="top-right"  font="image-font">50/60</sprite-text>
 </drawing>
