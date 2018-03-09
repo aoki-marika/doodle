@@ -1,6 +1,7 @@
 
-from enum import Flag, auto
+import os
 
+from enum import Flag, auto
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
@@ -370,7 +371,8 @@ A type of <Drawable> that can draw text with fonts.
 You should not set the size on this drawable as it automatically calculates its size.
 """
 class Text(Drawable):
-	def __init__(self, fontPath, textColour, textSize, text, **kwargs):
+	# todo: handle empty strings crashing when rendering
+	def __init__(self, fontPath='', textColour=(0, 0, 0), textSize=0, text='', **kwargs):
 		super(Text, self).__init__(**kwargs)
 
 		# init the parameters so we dont crash when calling <apply_size> without all the parameters set
@@ -442,7 +444,8 @@ class Text(Drawable):
 	"""
 	def get_font(self):
 		if self.fontPath and self.textSize:
-			return ImageFont.truetype(self.fontPath, self.textSize)
+			if os.path.exists(self.fontPath):
+				return ImageFont.truetype(self.fontPath, self.textSize)
 		else:
 			return None
 

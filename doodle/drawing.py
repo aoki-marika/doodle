@@ -87,6 +87,7 @@ def element_from_xml(xml):
 		'container': ContainerElement,
 		'box': BoxElement,
 		'texture': TextureElement,
+		'text': TextElement,
 	}
 
 	return elements[xml.tag](xml)
@@ -176,6 +177,22 @@ class TextureElement(Element, Texture):
 
 	def load(self, drawing):
 		self.image = Image.open(os.path.join(drawing.path, self.file))
+
+"""
+A <Text> variant of <Element>.
+"""
+class TextElement(Element, Text):
+	def __init__(self, xml):
+		super(Text, self).__init__()
+		super(TextElement, self).__init__(xml)
+
+		self.font = xml.get('font')
+		self.textColour = colour_from_string(xml.get('colour') or '')
+		self.textSize = int(xml.get('font-size') or 0)
+		self.text = xml.text
+
+	def load(self, drawing):
+		self.fontPath = os.path.join(drawing.path, self.font)
 
 """
 A special <ContainerElement> that loads a file.
