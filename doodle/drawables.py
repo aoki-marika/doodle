@@ -288,10 +288,15 @@ class Container(Drawable):
 	Add a child view.
 
 	:param child: The <Drawable> to add.
+	:param index: The index in <children> to insert <child> at.
 	"""
-	def add(self, child):
+	def add(self, child, index=-1):
 		child.parent = self
-		self.children.append(child)
+
+		if index == -1:
+			self.children.append(child)
+		else:
+			self.children.insert(index, child)
 
 	"""
 	Remove a child view.

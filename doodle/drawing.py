@@ -1,4 +1,5 @@
 
+import operator
 import os
 
 import xml.etree.ElementTree as ET
@@ -77,6 +78,31 @@ def bool_from_string(string):
 	return string.lower() == 'true'
 
 """
+Get an <operator> from a string.
+
+:param string: The string to parse.
+:returns: The <operator> in <string>.
+"""
+def operator_from_string(string):
+	if string:
+		operators = {
+			'==': operator.eq,
+			'!=': operator.ne,
+			'>=': operator.ge,
+			'>': operator.gt,
+			'<=': operator.le,
+			'<': operator.lt,
+		}
+
+		string = string.lower()
+		if string in operators:
+			return operators[string]
+		else:
+			return None
+	else:
+		return None
+
+"""
 Get an <Element> from an XML node.
 
 :param xml: The XML to get an <Element> for.
@@ -88,7 +114,15 @@ def element_from_xml(xml):
 		'box': BoxElement,
 		'texture': TextureElement,
 		'text': TextElement,
+		'switch': SwitchElement,
 	}
+
+	special = [
+		'option',
+	]
+
+	if xml.tag in special:
+		return None
 
 	return elements[xml.tag](xml)
 
@@ -148,7 +182,9 @@ class ContainerElement(Element, Container):
 			)
 
 		for node in xml:
-			self.add(element_from_xml(node))
+			element = element_from_xml(node)
+			if element:
+				self.add(element)
 
 	def load(self, drawing):
 		for child in self.children:
@@ -195,6 +231,46 @@ class TextElement(Element, Text):
 	def load(self, drawing):
 		self.text = drawing.format_string(self.text)
 		self.fontPath = os.path.join(drawing.path, self.font)
+
+"""
+A <ContainerElement> that hides/shows <Drawable>s depending on a value.
+"""
+class SwitchElement(ContainerElement):
+	def __init__(self, xml):
+		super(SwitchElement, self).__init__(xml)
+		self.xml = xml
+		self.value = xml.get('value')
+		self.options = [SwitchOption(n) for n in xml.iter('option')]
+
+	def load(self, drawing):
+		self.value = drawing.format_string(self.value)
+
+		for option in self.options:
+			# cast self.value and option.value to floats if they are a number so the operator works correctly
+
+			try: sv = float(self.value)
+			except: sv = self.value
+
+			try: ov = float(option.value)
+			except: ov = option.value
+
+			if option.operator(sv, ov):
+				# place the option at the correct index so that the elements before and after it are properly on top or below
+				children = self.xml.getchildren()
+				children = [c for c in children if (c == option.xml and c.tag == 'option') or c.tag != 'option']
+
+				self.add(element_from_xml(option.element), children.index(option.xml))
+				break
+
+"""
+An option for a <SwitchElement>.
+"""
+class SwitchOption:
+	def __init__(self, xml):
+		self.xml = xml
+		self.element = xml[0]
+		self.operator = operator_from_string(xml.get('operator') or '==')
+		self.value = xml.get('value')
 
 """
 A special <ContainerElement> that loads a file.

@@ -369,16 +369,17 @@ def drawing_test():
 			'value_four': 4,
 		},
 		'value_five': 5,
+		'switch_value': 50,
 	}
 
 	drawing = Drawing('tests/assets/drawing.xml', values)
 	drawing.render().save('tests/drawing_test.png')
 
 if __name__ == '__main__':
-	container_test()
-	margin_padding_test()
-	masking_test()
-	component_test()
-	texture_test()
-	text_test()
+	# container_test()
+	# margin_padding_test()
+	# masking_test()
+	# component_test()
+	# texture_test()
+	# text_test()
 	drawing_test()
