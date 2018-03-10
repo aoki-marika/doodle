@@ -347,13 +347,29 @@ def text_test():
 					),
 				],
 			),
-			Text(
+			Container(
 				anchor=Anchor.TOP_RIGHT,
 				origin=Anchor.TOP_RIGHT,
-				fontPath=font,
-				textColour=(0, 255, 0),
-				textSize=18,
-				text='top right',
+				size=(150, 100),
+				children=[
+					Box(
+						relativeSizeAxes=Axes.BOTH,
+						size=(1, 1),
+						colour=(255, 255, 255),
+					),
+					Text(
+						anchor=Anchor.TOP_CENTER,
+						origin=Anchor.TOP_CENTER,
+						relativeSizeAxes=Axes.BOTH,
+						size=(1, 1),
+						fontPath=font,
+						textColour=(255, 0, 0),
+						textSize=10,
+						text='top right top-centered wrap. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+						mode=TextMode.WRAP,
+						lineSpacing=5,
+					),
+				],
 			),
 			Text(
 				anchor=Anchor.BOTTOM_LEFT,
