@@ -257,6 +257,7 @@ class TextElement(Element, Text):
 		self.textSize = int(xml.get('font-size') or 0)
 		self.text = xml.text
 		self.mode = text_mode_from_string(xml.get('mode')) or TextMode.SINGLE_LINE
+		self.lineSpacing = int(xml.get('line-spacing') or 0)
 
 	def load(self, drawing):
 		self.text = drawing.format_string(self.text)
