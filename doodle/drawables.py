@@ -503,18 +503,6 @@ class Text(Drawable):
 				elif self.mode == TextMode.SQUISH:
 					self.size = (self.size[0], s[1])
 
-	@property
-	def draw_size(self):
-		size = super(Text, self).draw_size
-
-		# give the proper size when squishing so that anchor/origin still work properly
-		if self.mode == TextMode.SQUISH:
-			s = self.font.getsize(self.text)
-			if size[0] > s[0]:
-				size = (s[0], size[1])
-
-		return size
-
 	def render(self):
 		def text_image(text):
 			temp = Image.new('RGBA', self.font.getsize(text), (255, 255, 255, 0))
@@ -523,33 +511,38 @@ class Text(Drawable):
 
 			return temp
 
+		def horizontal_position(image):
+			if self.anchor & Anchor.X_LEFT:
+				return 0
+			elif self.anchor & Anchor.X_CENTER:
+				return int((size[0] - image.size[0]) / 2)
+			elif self.anchor & Anchor.X_RIGHT:
+				return size[0] - image.size[0]
+
 		size = round_tuple_values(self.draw_size)
 
 		if self.mode == TextMode.WRAP:
 			textImage = Image.new('RGBA', size, (255, 255, 255, 0))
 
 			# get an estimate of how many characters there should be per-line
-			limit = (size[0] / self.font.getsize('a')[0])
+			limit = int(size[0] / self.font.getsize('a')[0])
 
 			lineY = 0
 			for line in textwrap.wrap(self.text, width=limit):
 				lineImage = text_image(line)
 
-				# horizontally align the line depending on the anchor
-				if self.anchor & Anchor.X_LEFT:
-					lineX = 0
-				elif self.anchor & Anchor.X_CENTER:
-					lineX = int((size[0] - lineImage.size[0]) / 2)
-				elif self.anchor & Anchor.X_RIGHT:
-					lineX = size[0] - lineImage.size[0]
-
-				textImage = paste_image(textImage, lineImage, (lineX, lineY))
+				textImage = paste_image(textImage, lineImage, (horizontal_position(lineImage), lineY))
 				lineY += lineImage.size[1] + self.lineSpacing
 		else:
 			textImage = text_image(self.text)
 
 			if self.mode == TextMode.SQUISH:
-				textImage = textImage.resize((size[0], textImage.size[1]), Image.ANTIALIAS)
+				if size[0] < textImage.size[0]:
+					textImage = textImage.resize((size[0], textImage.size[1]), Image.ANTIALIAS)
+
+				# correctly horizontally place the text
+				fullImage = Image.new('RGBA', size, (255, 255, 255, 0))
+				textImage = paste_image(fullImage, textImage, (horizontal_position(textImage), 0))
 
 		return textImage;
 
