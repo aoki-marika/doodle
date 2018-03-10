@@ -504,6 +504,11 @@ class Text(Drawable):
 					self.size = (self.size[0], s[1])
 
 	def render(self):
+		"""
+		Get an <Image> for given text drawn in this <Text>s specified styling.
+
+		:param text: The text to get an image of.
+		"""
 		def text_image(text):
 			temp = Image.new('RGBA', self.font.getsize(text), (255, 255, 255, 0))
 			draw = ImageDraw.Draw(temp)
@@ -511,40 +516,69 @@ class Text(Drawable):
 
 			return temp
 
-		def horizontal_position(image):
-			if self.anchor & Anchor.X_LEFT:
+		"""
+		Get the anchored position of an image either the X or Y axis.
+
+		:param imageSize: The width or height of the image to get the position of.
+		:param parentSize: The width or height of the parent to anchor <imageSize> inside of.
+		:returns: The anchored position of <imageSize>, relative to <parentSize>.
+		"""
+		def anchored_position(imageSize, parentSize):
+			if self.anchor & Anchor.X_LEFT or self.anchor & Anchor.Y_TOP:
 				return 0
-			elif self.anchor & Anchor.X_CENTER:
-				return int((size[0] - image.size[0]) / 2)
-			elif self.anchor & Anchor.X_RIGHT:
-				return size[0] - image.size[0]
+			elif self.anchor & Anchor.X_CENTER or self.anchor & Anchor.Y_CENTER:
+				return int((parentSize - imageSize) / 2)
+			elif self.anchor & Anchor.X_RIGHT or self.anchor & Anchor.Y_BOTTOM:
+				return parentSize - imageSize
+
+		"""
+		Get the horizontal anchored position of an <Image> using <anchor>.
+
+		:param image: The <Image> to get the anchored position of.
+		:returns: The horizontal anchored position of <image>.
+		"""
+		def horizontal_position(image):
+			return anchored_position(image.size[0], size[0])
+
+		"""
+		<horizontal_position>, but the vertical anchored position.
+		"""
+		def vertical_position(image):
+			return anchored_position(image.size[1], size[1])
 
 		size = round_tuple_values(self.draw_size)
+		drawImage = Image.new('RGBA', size, (255, 255, 255, 0))
 
 		if self.mode == TextMode.WRAP:
-			textImage = Image.new('RGBA', size, (255, 255, 255, 0))
-
 			# get an estimate of how many characters there should be per-line
 			limit = int(size[0] / self.font.getsize('a')[0])
 
-			lineY = 0
+			textHeight = 0
+			lineImages = []
+
 			for line in textwrap.wrap(self.text, width=limit):
 				lineImage = text_image(line)
+				textHeight += lineImage.size[1] + self.lineSpacing
+				lineImages.append(lineImage)
 
+			# remove the trailing spacing if there is any
+			textHeight = max(textHeight - self.lineSpacing, 0)
+
+			textImage = Image.new('RGBA', (size[0], textHeight), (255, 255, 255, 0))
+			lineY = 0
+
+			for lineImage in lineImages:
 				textImage = paste_image(textImage, lineImage, (horizontal_position(lineImage), lineY))
 				lineY += lineImage.size[1] + self.lineSpacing
 		else:
 			textImage = text_image(self.text)
 
-			if self.mode == TextMode.SQUISH:
-				if size[0] < textImage.size[0]:
-					textImage = textImage.resize((size[0], textImage.size[1]), Image.ANTIALIAS)
+			# squish the text if we are squishing and the text needs to be squished
+			if self.mode == TextMode.SQUISH and size[0] < textImage.size[0]:
+				textImage = textImage.resize((size[0], textImage.size[1]), Image.ANTIALIAS)
 
-				# correctly horizontally place the text
-				fullImage = Image.new('RGBA', size, (255, 255, 255, 0))
-				textImage = paste_image(fullImage, textImage, (horizontal_position(textImage), 0))
-
-		return textImage;
+		# correctly horizontally and vertically place the text image
+		return paste_image(drawImage, textImage, (horizontal_position(textImage), vertical_position(textImage)));
 
 """
 A type of <Drawable> that can draw text with image files.

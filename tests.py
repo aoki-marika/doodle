@@ -350,7 +350,7 @@ def text_test():
 			Container(
 				anchor=Anchor.TOP_RIGHT,
 				origin=Anchor.TOP_RIGHT,
-				size=(150, 100),
+				size=(150, 150),
 				children=[
 					Box(
 						relativeSizeAxes=Axes.BOTH,
@@ -358,14 +358,14 @@ def text_test():
 						colour=(255, 255, 255),
 					),
 					Text(
-						anchor=Anchor.TOP_CENTER,
-						origin=Anchor.TOP_CENTER,
+						anchor=Anchor.CENTER,
+						origin=Anchor.CENTER,
 						relativeSizeAxes=Axes.BOTH,
 						size=(1, 1),
 						fontPath=font,
 						textColour=(255, 0, 0),
 						textSize=10,
-						text='top right top-centered wrap. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+						text='Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. centered wrap. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',
 						mode=TextMode.WRAP,
 						lineSpacing=5,
 					),
