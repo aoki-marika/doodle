@@ -1,5 +1,6 @@
 
 import os
+import textwrap
 
 import xml.etree.ElementTree as ET
 
@@ -398,7 +399,15 @@ When using <TextMode.SINGLE_LINE>, you should not change the width or height.
 When using <TextMode.SQUISH>, you should not change the height.
 """
 class Text(Drawable):
-	def __init__(self, fontPath='', textColour=(255, 255, 255), textSize=0, text='', mode=TextMode.SINGLE_LINE, **kwargs):
+	"""
+	:param fontPath: The path to the true-type font to use to draw this text.
+	:param textColour: The colour to draw the text with.
+	:param textSize: The height in pixels to draw the text with.
+	:param text: The text to draw.
+	:param mode: The <TextMode> to draw the text with.
+	:param lineSpacing: the vertical line spacing when using <TextMode.WRAP>, unused otherwise.
+	"""
+	def __init__(self, fontPath='', textColour=(255, 255, 255), textSize=0, text='', mode=TextMode.SINGLE_LINE, lineSpacing=0, **kwargs):
 		super(Text, self).__init__(**kwargs)
 
 		# init the parameters so we dont crash when calling <apply_size> without all the parameters set
@@ -407,8 +416,9 @@ class Text(Drawable):
 		self.textColour = None
 		self._textSize = None
 		self._text = None
-		self.mode = mode
 
+		self.mode = mode
+		self.lineSpacing = lineSpacing
 		self.fontPath = fontPath
 		self.textColour = textColour
 		self.textSize = textSize
@@ -506,15 +516,42 @@ class Text(Drawable):
 		return size
 
 	def render(self):
-		temp = Image.new('RGBA', self.font.getsize(self.text), (255, 255, 255, 0))
-		draw = ImageDraw.Draw(temp)
-		draw.text((0, 0), self.text, self.textColour, font=self.font)
+		def text_image(text):
+			temp = Image.new('RGBA', self.font.getsize(text), (255, 255, 255, 0))
+			draw = ImageDraw.Draw(temp)
+			draw.text((0, 0), text, self.textColour, font=self.font)
 
-		if self.mode == TextMode.SQUISH:
-			s = round_tuple_values(self.draw_size)
-			temp = temp.resize((s[0], temp.size[1]), Image.ANTIALIAS)
+			return temp
 
-		return temp
+		size = round_tuple_values(self.draw_size)
+
+		if self.mode == TextMode.WRAP:
+			textImage = Image.new('RGBA', size, (255, 255, 255, 0))
+
+			# get an estimate of how many characters there should be per-line
+			limit = (size[0] / self.font.getsize('a')[0])
+
+			lineY = 0
+			for line in textwrap.wrap(self.text, width=limit):
+				lineImage = text_image(line)
+
+				# horizontally align the line depending on the anchor
+				if self.anchor & Anchor.X_LEFT:
+					lineX = 0
+				elif self.anchor & Anchor.X_CENTER:
+					lineX = int((size[0] - lineImage.size[0]) / 2)
+				elif self.anchor & Anchor.X_RIGHT:
+					lineX = size[0] - lineImage.size[0]
+
+				textImage = paste_image(textImage, lineImage, (lineX, lineY))
+				lineY += lineImage.size[1] + self.lineSpacing
+		else:
+			textImage = text_image(self.text)
+
+			if self.mode == TextMode.SQUISH:
+				textImage = textImage.resize((size[0], textImage.size[1]), Image.ANTIALIAS)
+
+		return textImage;
 
 """
 A type of <Drawable> that can draw text with image files.
