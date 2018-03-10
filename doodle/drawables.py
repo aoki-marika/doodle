@@ -517,7 +517,7 @@ class Text(Drawable):
 			return temp
 
 		"""
-		Get the anchored position of an image either the X or Y axis.
+		Get the anchored position of an image on either the X or Y axis.
 
 		:param imageSize: The width or height of the image to get the position of.
 		:param parentSize: The width or height of the parent to anchor <imageSize> inside of.
@@ -556,15 +556,15 @@ class Text(Drawable):
 			textHeight = 0
 			lineImages = []
 
+			# get all the line images and the height of textImage
 			for line in textwrap.wrap(self.text, width=limit):
 				lineImage = text_image(line)
 				textHeight += lineImage.size[1] + self.lineSpacing
 				lineImages.append(lineImage)
 
-			# remove the trailing spacing if there is any
 			textHeight = max(textHeight - self.lineSpacing, 0)
-
 			textImage = Image.new('RGBA', (size[0], textHeight), (255, 255, 255, 0))
+
 			lineY = 0
 
 			for lineImage in lineImages:
