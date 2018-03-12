@@ -7,13 +7,14 @@ import xml.etree.ElementTree as ET
 from doodle import Drawable, Container, Box, Texture, Text, SpriteText, Anchor, Axes, TextMode
 from PIL import Image
 
-"""
-Get an <Anchor> from a string.
-
-:param string: The string to parse.
-:returns: An <Anchor> if <string> matched one, or <None> if not.
-"""
 def anchor_from_string(string):
+	"""
+	Get an <Anchor> from a string.
+
+	:param string: The string to parse.
+	:returns: An <Anchor> if <string> matched one, or <None> if not.
+	"""
+
 	if string:
 		anchors = {
 			'top-left': Anchor.TOP_LEFT,
@@ -35,13 +36,14 @@ def anchor_from_string(string):
 	else:
 		return None
 
-"""
-Get an <Axes> from a string.
-
-:param string: The string to parse.
-:returns: An <Axes> if <string> matched one, or <None> if not.
-"""
 def axes_from_string(string):
+	"""
+	Get an <Axes> from a string.
+
+	:param string: The string to parse.
+	:returns: An <Axes> if <string> matched one, or <None> if not.
+	"""
+
 	if string:
 		axes = {
 			'none': Axes.NONE,
@@ -58,13 +60,14 @@ def axes_from_string(string):
 	else:
 		return None
 
-"""
-Get a <TextMode> from a string.
-
-:param string: The string to parse.
-:returns: A <TextMode> if <string> matched one, or <None> if not.
-"""
 def text_mode_from_string(string):
+	"""
+	Get a <TextMode> from a string.
+
+	:param string: The string to parse.
+	:returns: A <TextMode> if <string> matched one, or <None> if not.
+	"""
+
 	if string:
 		modes = {
 			'single-line': TextMode.SINGLE_LINE,
@@ -80,32 +83,35 @@ def text_mode_from_string(string):
 	else:
 		return None
 
-"""
-Get an RGB tuple from an RGB hex.
-
-:param string: The RGB hex to parse.
-:returns: An RGB tuple parsed from <string>.
-"""
 def colour_from_string(string):
+	"""
+	Get an RGB tuple from an RGB hex.
+
+	:param string: The RGB hex to parse.
+	:returns: An RGB tuple parsed from <string>.
+	"""
+
 	string = string.lstrip('#')
 	return tuple(int(string[i : i + 2], 16) for i in (0, 2, 4))
 
-"""
-Get a <Boolean> from a string.
-
-:param string: The string to parse.
-:returns: Whether <string> is 'true' or not.
-"""
 def bool_from_string(string):
+	"""
+	Get a <Boolean> from a string.
+
+	:param string: The string to parse.
+	:returns: Whether <string> is 'true' or not.
+	"""
+
 	return string.lower() == 'true'
 
-"""
-Get an <operator> from a string.
-
-:param string: The string to parse.
-:returns: The <operator> in <string>.
-"""
 def operator_from_string(string):
+	"""
+	Get an <operator> from a string.
+
+	:param string: The string to parse.
+	:returns: The <operator> in <string>.
+	"""
+
 	if string:
 		operators = {
 			'==': operator.eq,
@@ -124,13 +130,14 @@ def operator_from_string(string):
 	else:
 		return None
 
-"""
-Get an <Element> from an XML node.
-
-:param xml: The XML to get an <Element> for.
-:returns: An <Element> from <xml>.
-"""
 def element_from_xml(xml):
+	"""
+	Get an <Element> from an XML node.
+
+	:param xml: The XML to get an <Element> for.
+	:returns: An <Element> from <xml>.
+	"""
+
 	elements = {
 		'container': ContainerElement,
 		'box': BoxElement,
@@ -150,14 +157,16 @@ def element_from_xml(xml):
 
 	return elements[xml.tag](xml)
 
-"""
-A <Drawable> that is loaded from an XML node.
-"""
 class Element(Drawable):
 	"""
-	:param xml: The XML node to parse to get the properties of this element.
+	A <Drawable> that is loaded from an XML node.
 	"""
+
 	def __init__(self, xml):
+		"""
+		:param xml: The XML node to parse to get the properties of this element.
+		"""
+
 		super(Element, self).__init__()
 		self.anchor = anchor_from_string(xml.get('anchor')) or Anchor.TOP_LEFT
 		self.origin = anchor_from_string(xml.get('origin')) or Anchor.TOP_LEFT
@@ -183,18 +192,20 @@ class Element(Drawable):
 				float(xml.get('margin-right') or 0),
 			)
 
-	"""
-	Load this elements attributes that are dependant on a <Drawing>.
-
-	:param drawing: The <Drawing> to load with.
-	"""
 	def load(self, drawing):
+		"""
+		Load this elements attributes that are dependant on a <Drawing>.
+
+		:param drawing: The <Drawing> to load with.
+		"""
+
 		return
 
-"""
-A <Container> variant of <Element>.
-"""
 class ContainerElement(Element, Container):
+	"""
+	A <Container> variant of <Element>.
+	"""
+
 	def __init__(self, xml):
 		super(Container, self).__init__()
 		super(ContainerElement, self).__init__(xml)
@@ -219,20 +230,22 @@ class ContainerElement(Element, Container):
 		for child in self.children:
 			child.load(drawing)
 
-"""
-A <Box> variant of <Element>.
-"""
 class BoxElement(Element, Box):
+	"""
+	A <Box> variant of <Element>.
+	"""
+
 	def __init__(self, xml):
 		super(Box, self).__init__()
 		super(BoxElement, self).__init__(xml)
 
 		self.colour = colour_from_string(xml.get('colour') or '')
 
-"""
-A <Texture> variant of <Element>.
-"""
 class TextureElement(Element, Texture):
+	"""
+	A <Texture> variant of <Element>.
+	"""
+
 	def __init__(self, xml):
 		super(Texture, self).__init__()
 		super(TextureElement, self).__init__(xml)
@@ -244,10 +257,11 @@ class TextureElement(Element, Texture):
 		self.file = drawing.format_string(self.file)
 		self.image = Image.open(os.path.join(drawing.path, self.file))
 
-"""
-A <Text> variant of <Element>.
-"""
 class TextElement(Element, Text):
+	"""
+	A <Text> variant of <Element>.
+	"""
+
 	def __init__(self, xml):
 		super(Text, self).__init__()
 		super(TextElement, self).__init__(xml)
@@ -263,10 +277,11 @@ class TextElement(Element, Text):
 		self.text = drawing.format_string(self.text)
 		self.fontPath = os.path.join(drawing.path, self.relativeFontPath)
 
-"""
-A <SpriteText> variant of <Element>.
-"""
 class SpriteTextElement(Element, SpriteText):
+	"""
+	A <SpriteText> variant of <Element>.
+	"""
+
 	def __init__(self, xml):
 		super(SpriteText, self).__init__()
 		super(SpriteTextElement, self).__init__(xml)
@@ -278,10 +293,11 @@ class SpriteTextElement(Element, SpriteText):
 		self.text = drawing.format_string(self.text)
 		self.fontPath = os.path.join(drawing.path, self.relativeFontPath)
 
-"""
-A <ContainerElement> that hides/shows <Drawable>s depending on a value.
-"""
 class SwitchElement(ContainerElement):
+	"""
+	A <ContainerElement> that hides/shows <Drawable>s depending on a value.
+	"""
+
 	def __init__(self, xml):
 		super(SwitchElement, self).__init__(xml)
 
@@ -315,20 +331,22 @@ class SwitchElement(ContainerElement):
 
 					return
 
-"""
-An option for a <SwitchElement>.
-"""
 class SwitchOption:
+	"""
+	An option for a <SwitchElement>.
+	"""
+
 	def __init__(self, xml):
 		self.xml = xml
 		self.element = xml[0]
 		self.operator = operator_from_string(xml.get('operator') or '==')
 		self.values = xml.get('value').split(', ')
 
-"""
-A <ContainerElement> that can resize based on a value.
-"""
 class ProgressElement(ContainerElement):
+	"""
+	A <ContainerElement> that can resize based on a value.
+	"""
+
 	def __init__(self, xml):
 		super(ProgressElement, self).__init__(xml)
 
@@ -346,15 +364,17 @@ class ProgressElement(ContainerElement):
 		if self.axes & Axes.Y:
 			self.height = self.value
 
-"""
-A special <ContainerElement> that loads a file.
-"""
 class Drawing(ContainerElement):
 	"""
-	:param file: The path to the file to load.
-	:param values: The object to get values from when an <Element> is asking for values.
+	A special <ContainerElement> that loads a file.
 	"""
+
 	def __init__(self, file, values):
+		"""
+		:param file: The path to the file to load.
+		:param values: The object to get values from when an <Element> is asking for values.
+		"""
+
 		if os.path.exists(file):
 			tree = ET.parse(file)
 			root = tree.getroot()
