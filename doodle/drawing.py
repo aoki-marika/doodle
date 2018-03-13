@@ -4,7 +4,7 @@ import os
 
 import xml.etree.ElementTree as ET
 
-from doodle import Drawable, Container, Box, Texture, Text, SpriteText, Anchor, Axes, TextMode
+from doodle import Drawable, Container, Box, Texture, Text, SpriteText, SpriteFont, Anchor, Axes, TextMode
 from PIL import Image
 
 def anchor_from_string(string):
@@ -291,7 +291,7 @@ class SpriteTextElement(Element, SpriteText):
 
     def load(self, drawing):
         self.text = drawing.format_string(self.text)
-        self.fontPath = os.path.join(drawing.path, self.relativeFontPath)
+        self.font = SpriteFont(os.path.join(drawing.path, self.relativeFontPath))
 
 class SwitchElement(ContainerElement):
     """

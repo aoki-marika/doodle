@@ -1,5 +1,5 @@
 
-from doodle import Drawable, Container, Box, Texture, Text, SpriteText, Anchor, Axes, Drawing, TextMode
+from doodle import Drawable, Container, Box, Texture, Text, SpriteText, SpriteFont, Anchor, Axes, Drawing, TextMode
 
 from PIL import Image
 
@@ -401,7 +401,7 @@ def text_test():
     container.render().save('tests/text_test.png')
 
 def sprite_text_test():
-    fontPath = 'tests/assets/image-font'
+    font = SpriteFont('tests/assets/image-font')
 
     container = Container(
         size=(400, 400),
@@ -413,31 +413,31 @@ def sprite_text_test():
                 colour=(0, 0, 0),
             ),
             SpriteText(
-                fontPath=fontPath,
+                font=font,
                 text='0/0',
             ),
             SpriteText(
                 anchor=Anchor.TOP_RIGHT,
                 origin=Anchor.TOP_RIGHT,
-                fontPath=fontPath,
+                font=font,
                 text='60/0',
             ),
             SpriteText(
                 anchor=Anchor.CENTER,
                 origin=Anchor.CENTER,
-                fontPath=fontPath,
+                font=font,
                 text='50/60',
             ),
             SpriteText(
                 anchor=Anchor.BOTTOM_LEFT,
                 origin=Anchor.BOTTOM_LEFT,
-                fontPath=fontPath,
+                font=font,
                 text='0/60',
             ),
             SpriteText(
                 anchor=Anchor.BOTTOM_RIGHT,
                 origin=Anchor.BOTTOM_RIGHT,
-                fontPath=fontPath,
+                font=font,
                 text='60/50',
             ),
         ],
