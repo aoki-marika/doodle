@@ -318,7 +318,8 @@ class Container(Drawable):
             child (Drawable): The drawable to add as a child.
 
             index (int): The index in `children` to insert `child` at, -1 is the
-                end of the array. Defaults to -1.
+                end of the array.
+                Defaults to -1.
         """
 
         child.parent = self
@@ -382,9 +383,6 @@ class Texture(Drawable):
     A type of `Drawable` that draws an `Image`.
 
     Attributes:
-        image (Image): The `Image` for this texture to draw.
-            Defaults to None.
-
         sizeToImage (bool): Whether or not this texture should automatically
             resize to the size of its image.
     """
@@ -720,7 +718,7 @@ class SpriteFont:
     Attributes:
         path (str): The path to this sprite fonts folder.
 
-        characterSize ((int, int)): The size in pixels of all the characters in
+        characterSize ((int, int)): The size in pixels of every character in
             this font.
 
         characterSpacing (int): The horizontal spacing in pixels between every
