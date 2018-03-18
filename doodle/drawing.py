@@ -1,4 +1,16 @@
 
+"""
+A framework built on top of drawables for creating view hierarchies from specially formatted files.
+
+For every element its name is the same as the `Drawable` it subclasses from, but
+the name is in lisp-case. For attributes its the same, they represent a property
+of their `Drawable` base class in lisp-case. Any exceptions to this rule are
+listed in the docstring of their respective `Element` subclass.
+
+For attributes that are of a special type, see the respective `*_from_string`
+method for details on formatting.
+"""
+
 import operator
 import os
 
@@ -9,10 +21,13 @@ from PIL import Image
 
 def anchor_from_string(string):
     """
-    Get an <Anchor> from a string.
+    Get an `Anchor` from a string.
 
-    :param string: The string to parse.
-    :returns: An <Anchor> if <string> matched one, or <None> if not.
+    Args:
+        string (str): The string to parse.
+
+    Returns:
+        Anchor: An anchor if `string` matched one, or None if not.
     """
 
     if string:
@@ -38,10 +53,13 @@ def anchor_from_string(string):
 
 def axes_from_string(string):
     """
-    Get an <Axes> from a string.
+    Get an `Axes` from a string.
 
-    :param string: The string to parse.
-    :returns: An <Axes> if <string> matched one, or <None> if not.
+    Args:
+        string (str): The string to parse.
+
+    Returns:
+        Axes: An axes if `string` matched one, or None if not.
     """
 
     if string:
@@ -62,10 +80,13 @@ def axes_from_string(string):
 
 def text_mode_from_string(string):
     """
-    Get a <TextMode> from a string.
+    Get a `TextMode` from a string.
 
-    :param string: The string to parse.
-    :returns: A <TextMode> if <string> matched one, or <None> if not.
+    Args:
+        string (str): The string to parse.
+
+    Returns:
+        TextMode: A text mode if `string` matched one, or None if not.
     """
 
     if string:
@@ -85,10 +106,13 @@ def text_mode_from_string(string):
 
 def colour_from_string(string):
     """
-    Get an RGB tuple from an RGB hex.
+    Get an RGB tuple from an RGB hex string.
 
-    :param string: The RGB hex to parse.
-    :returns: An RGB tuple parsed from <string>.
+    Args:
+        string (str): The RGB hex string to parse.
+
+    Returns:
+        Anchor: An RGB tuple parsed from `string`.
     """
 
     string = string.lstrip('#')
@@ -96,20 +120,26 @@ def colour_from_string(string):
 
 def bool_from_string(string):
     """
-    Get a <Boolean> from a string.
+    Get a `bool` from a string.
 
-    :param string: The string to parse.
-    :returns: Whether <string> is 'true' or not.
+    Args:
+        string (str): The string to parse.
+
+    Returns:
+        bool: Whether `string` is 'true' or not.
     """
 
     return string.lower() == 'true'
 
 def operator_from_string(string):
     """
-    Get an <operator> from a string.
+    Get an `operator` from a string.
 
-    :param string: The string to parse.
-    :returns: The <operator> in <string>.
+    Args:
+        string (str): The string to parse.
+
+    Returns:
+        operator: An operator if `string` matched one, or None if not.
     """
 
     if string:
@@ -132,10 +162,13 @@ def operator_from_string(string):
 
 def element_from_xml(xml):
     """
-    Get an <Element> from an XML node.
+    Get an `Element` from an XML element.
 
-    :param xml: The XML to get an <Element> for.
-    :returns: An <Element> from <xml>.
+    Args:
+        xml (ET.Element): The XML to get an `Element` from.
+
+    Returns:
+        Element: An element from `xml`.
     """
 
     elements = {
@@ -159,12 +192,27 @@ def element_from_xml(xml):
 
 class Element(Drawable):
     """
-    A <Drawable> that is loaded from an XML node.
+    A `Drawable` that is loaded from an XML element.
+
+    Element Attributes:
+        size: Sets both `width` and `height`, ignores `width` and `height`.
+
+        margin: Sets all sides of `margin`, ignores the other margin attributes.
+
+        margin-top: Sets the top value of `margin`.
+
+        margin-bottom: Sets the top value of `margin`.
+
+        margin-left: Sets the top value of `margin`.
+
+        margin-right: Sets the top value of `margin`.
     """
 
     def __init__(self, xml):
         """
-        :param xml: The XML node to parse to get the properties of this element.
+        Args:
+            xml (ET.Element): The XML element to use for getting the properties
+                of this element.
         """
 
         super(Element, self).__init__()
@@ -194,21 +242,45 @@ class Element(Drawable):
 
     def load(self, drawing):
         """
-        Load this elements attributes that are dependant on a <Drawing>.
+        Load this elements attributes that are dependent on a `Drawing`.
 
-        :param drawing: The <Drawing> to load with.
+        Args:
+            drawing (Drawing): The drawing to load with.
         """
 
         return
 
 class ContainerElement(Element, Container):
     """
-    A <Container> variant of <Element>.
+    A `Container` variant of `Element`.
+
+    Element Usage:
+        Inside of container elements you can specify child elements, such as
+        below:
+
+        <container width="400" height="400">
+            <box relative-size-axes="both" size="1" colour="ffffff"/>
+            ...
+        </container>
+
+    Element Attributes:
+        padding: Sets all sides of `padding`, ignores the other padding
+            attributes.
+
+        padding-top: Sets the top value of `padding`.
+
+        padding-bottom: Sets the top value of `padding`.
+
+        padding-left: Sets the top value of `padding`.
+
+        padding-right: Sets the top value of `padding`.
     """
 
     def __init__(self, xml):
         super(Container, self).__init__()
         super(ContainerElement, self).__init__(xml)
+
+        self.masking = bool_from_string(xml.get('masking') or 'true')
 
         if 'padding' in xml.attrib:
             p = float(xml.get('padding'))
@@ -232,7 +304,7 @@ class ContainerElement(Element, Container):
 
 class BoxElement(Element, Box):
     """
-    A <Box> variant of <Element>.
+    A `Box` variant of `Element`.
     """
 
     def __init__(self, xml):
@@ -243,7 +315,12 @@ class BoxElement(Element, Box):
 
 class TextureElement(Element, Texture):
     """
-    A <Texture> variant of <Element>.
+    A `Texture` variant of `Element`.
+
+    Element Attributes:
+        file: The path to the image file for this texture to display, can be
+            relative if there is no leading slash.
+            Supports string formatting.
     """
 
     def __init__(self, xml):
@@ -259,7 +336,19 @@ class TextureElement(Element, Texture):
 
 class TextElement(Element, Text):
     """
-    A <Text> variant of <Element>.
+    A `Text` variant of `Element`.
+
+    Element Usage:
+        Inside of text elements you can specify the text to display, such as
+        below:
+
+        <text ...>hello, world!</text>
+
+        Which also supports string formatting.
+
+    Element Attributes:
+        font: The path to the font for this text to use, can be relative if
+            there is no leading slash.
     """
 
     def __init__(self, xml):
@@ -279,7 +368,19 @@ class TextElement(Element, Text):
 
 class SpriteTextElement(Element, SpriteText):
     """
-    A <SpriteText> variant of <Element>.
+    A `SpriteText` variant of `Element`.
+
+    Element Usage:
+        Inside of sprite text elements you can specify the text to display, such
+        as below:
+
+        <sprite-text ...>hello, world!</sprite-text>
+
+        Which also supports string interpolation.
+
+    Element Attributes:
+        font: The path to the font for this text to use, can be relative if
+            there is no leading slash.
     """
 
     def __init__(self, xml):
@@ -295,7 +396,23 @@ class SpriteTextElement(Element, SpriteText):
 
 class SwitchElement(ContainerElement):
     """
-    A <ContainerElement> that hides/shows <Drawable>s depending on a value.
+    A `ContainerElement` that hides/shows `Drawable`s depending on a value.
+
+    Element Usage:
+        Switch elements work like switch statements in programming in that a
+        value is used to choose from a list of options (typically called cases).
+
+        These options are specified by `OptionElement`s that are placed inside
+        the switch element, like children in containers. Although options are
+        added like children, switch elements still allow other children to be
+        mixed in with the options.
+
+        See `OptionElement` for more info on the formatting of options.
+
+    Element Attributes:
+        value: The value for this switch to switch on and compare against
+            its options.
+            Supports string formatting.
     """
 
     def __init__(self, xml):
@@ -333,10 +450,40 @@ class SwitchElement(ContainerElement):
 
 class SwitchOption:
     """
-    An option for a <SwitchElement>.
+    An option for a `SwitchElement`.
+
+    Element Usage:
+        Switch options are a special type of element that wrap around a
+        `DrawableElement` so a `SwitchElement` can see what values represent
+        what option. Switch options only support a single element, though that
+        element can then have as many children as you want. Example:
+
+        <option ...>
+            <container relative-size-axes="both" size="1">
+                <box relative-size-axes="both" size="1" colour="ffffff"/>
+                ...
+            </container>
+        </option>
+
+        When an option is chosen by a `SwitchElement`, all the option elements
+        in the switch are removed and the chosen options element is placed
+        inside the switch at the same z-position as its option.
+
+    Element Attributes:
+        operator: The operator to use when comparing values against this option.
+            Defaults to `==`.
+
+        value: The value(s) that represent this option. When using multiple,
+            separate the values with ", ".
     """
 
     def __init__(self, xml):
+        """
+        Args:
+            xml (ET.Element): The XML element to use for getting the properties
+                of this option.
+        """
+
         self.xml = xml
         self.element = xml[0]
         self.operator = operator_from_string(xml.get('operator') or '==')
@@ -344,7 +491,21 @@ class SwitchOption:
 
 class ProgressElement(ContainerElement):
     """
-    A <ContainerElement> that can resize based on a value.
+    A `ContainerElement` that can resize based on a value.
+
+    Element Usage:
+        When a progress element sets its fill it is on a scale of 0 to 1, so you
+        should typically use the same relative size axes and progress axes.
+
+    Element Attributes:
+        progress-axes: The `Axes` for this progress element to resize on.
+            Defaults to `Axes.NONE`.
+
+        value: The value for this progress to use to determine its fill percent.
+            Supports string formatting.
+
+        max: The max value that `value` can be.
+            Defaults to 100.
     """
 
     def __init__(self, xml):
@@ -366,13 +527,27 @@ class ProgressElement(ContainerElement):
 
 class Drawing(ContainerElement):
     """
-    A special <ContainerElement> that loads a file.
+    A special `ContainerElement` that loads and is the root node of a drawing
+    file.
+
+    Element Usage:
+        <drawing width="..." height="...">
+            ...
+        </drawing>
+
+        Width and height are both required and should be the only attributes
+        used on a drawing element.
     """
 
     def __init__(self, file, values):
         """
-        :param file: The path to the file to load.
-        :param values: The object to get values from when an <Element> is asking for values.
+        Args:
+            file (str): The path to the file to load.
+
+            values (any): The object to get values from when an `Element` is
+                asking for values.
+                When an element says it supports string formatting, it means
+                that the string is formatted using these values.
         """
 
         if os.path.exists(file):
@@ -394,6 +569,16 @@ class Drawing(ContainerElement):
             raise ValueError('file does not exist')
 
     def format_string(self, string):
+        """
+        Format a string using `value`.
+
+        Args:
+            string (str): The string to format.
+
+        Returns:
+            str: `string` formatted with `values`.
+        """
+
         if isinstance(self.values, dict):
             return string.format(**self.values)
         else:
