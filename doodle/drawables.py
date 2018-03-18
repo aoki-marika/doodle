@@ -1,4 +1,8 @@
 
+"""
+A library for creating view hierarchies and rendering them into static images.
+"""
+
 import os
 import textwrap
 
@@ -11,727 +15,817 @@ from PIL import ImageFont
 
 from .utils import round_tuple_values, paste_image
 
-# todo: only recalculate draw/layout size/position when values change, not on every get
+# todo: only recalculate draw/layout/render size/position when values change, not on every get
 
-"""
-Anything that can be drawn onto an <Image>.
-"""
 class Drawable:
-	def __init__(self, width=0, height=0, x=0, y=0, **kwargs):
-		self.parent = None
-		self.size = (width, height)
-		self.position = (x, y)
-		self.anchor = Anchor.TOP_LEFT
-		self.origin = Anchor.TOP_LEFT
-		self.relativeSizeAxes = Axes.NONE
-		self.margin = (0, 0, 0, 0)
+    """
+    Anything that can be rendered into a static image.
 
-		for key, value in kwargs.items():
-			setattr(self, key, value)
+    Args:
+        Drawable arguments are done in a way that allows quickly creating large
+        draw hierarchies, and is reminiscent of C# object initializers. The
+        `kwargs` are all used to set the attribute of their key to their value,
+        which allows quickly doing things such as below:
 
-	@property
-	def width(self):
-		"""
-	    The X value of <size>.
+        Container(
+            width=400,
+            height=400,
+            children=[
+                Box(
+                    relativeSizeAxes=Axes.BOTH,
+                    size=(1, 1),
+                    colour=(255, 255, 255),
+                ),
+            ],
+        )
 
-	    :getter: Returns the X value of <size>.
-	    :setter: Sets the X value of <size>.
-	    :type: int or float
-	    """
+        which creates a 400x400 container with a white fill. Although it may not
+        seem like much in a small example like this, it is very useful for
+        large and or complex hierarchies.
 
-		return self.size[0]
+    Attributes:
+        anchor (Anchor): The point in `parent` that `origin` should center on.
+            Defaults to `Anchor.TOP_LEFT`.
 
-	@width.setter
-	def width(self, value):
-		self.size = (value, self.size[1])
+        margin ((int, int, int, int)): The top, bottom, left, and right margins
+            of this drawable, respectively.
+            Defaults to (0, 0, 0, 0).
 
-	@property
-	def height(self):
-		"""
-	    The Y value of <size>.
+        origin (Anchor): The point in this drawable that the position should be
+            anchored to.
+            Defaults to `Anchor.TOP_LEFT`.
 
-	    :getter: Returns the Y value of <size>.
-	    :setter: Sets the Y value of <size>.
-	    :type: int or float
-	    """
+        parent (Container): The parent of this drawable.
+            Defaults to None.
 
-		return self.size[1]
+        position ((int, int)): The position of this drawable, relative to
+            `parent` and `anchor`/`origin`.
+            Defaults to (0, 0).
 
-	@height.setter
-	def height(self, value):
-		self.size = (self.size[0], value)
+        relativeSizeAxes: Control which `Axes` are relatively sized using
+            `parent`s size (from 0 to 1).
+            Defaults to `Axes.NONE`.
 
-	@property
-	def x(self):
-		"""
-	    The X value of <position>.
+        size ((float, float)): The size of this drawable.
+            Defaults to (0, 0).
+    """
 
-	    :getter: Returns the X value of <position>.
-	    :setter: Sets the X value of <position>.
-	    :type: int
-	    """
+    def __init__(self, width=0, height=0, x=0, y=0, **kwargs):
+        self.parent = None
+        self.size = (width, height)
+        self.position = (x, y)
+        self.anchor = Anchor.TOP_LEFT
+        self.origin = Anchor.TOP_LEFT
+        self.relativeSizeAxes = Axes.NONE
+        self.margin = (0, 0, 0, 0)
 
-		return self.position[0]
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
-	@x.setter
-	def x(self, value):
-		self.position = (value, self.position[1])
+    @property
+    def width(self):
+        """float: The X (first) value of `size`."""
+        return self.size[0]
 
-	@property
-	def y(self):
-		"""
-	    The Y value of <position>.
+    @width.setter
+    def width(self, value):
+        self.size = (value, self.size[1])
 
-	    :getter: Returns the Y value of <position>.
-	    :setter: Sets the Y value of <position>.
-	    :type: int
-	    """
+    @property
+    def height(self):
+        """float: The Y (second) value of `size`."""
+        return self.size[1]
 
-		return self.position[1]
+    @height.setter
+    def height(self, value):
+        self.size = (self.size[0], value)
 
-	@y.setter
-	def y(self, value):
-		self.position = (self.position[0], value)
+    @property
+    def x(self):
+        """int: The X (first) value of `position`."""
 
-	@property
-	def draw_size(self):
-		"""
-		The size in pixels that this drawable will be drawn.
-		
-		:getter: Returns the draw size.
-		:type: (int, int)
-		"""
+        return self.position[0]
 
-		size = self.size
+    @x.setter
+    def x(self, value):
+        self.position = (value, self.position[1])
 
-		if self.relativeSizeAxes is not Axes.NONE:
-			if self.parent is None:
-				raise ValueError('cannot use relativeSizeAxes without having a parent')
+    @property
+    def y(self):
+        """int: The Y (second) value of `position`."""
+        return self.position[1]
 
-			p = self.parent.children_size
-			relativeWidth = p[0] * size[0]
-			relativeHeight = p[1] * size[1]
+    @y.setter
+    def y(self, value):
+        self.position = (self.position[0], value)
 
-			if self.relativeSizeAxes & Axes.X:
-				size = (relativeWidth, size[1])
+    @property
+    def draw_size(self):
+        """(int, int): The size in pixels that this drawable will be drawn with
+            when rendering."""
 
-			if self.relativeSizeAxes & Axes.Y:
-				size = (size[0], relativeHeight)
+        size = self.size
 
-		return size
+        if self.relativeSizeAxes is not Axes.NONE:
+            if self.parent is None:
+                raise ValueError('cannot use relativeSizeAxes without having a parent')
 
-	@property
-	def draw_position(self):
-		"""
-		The coordinates in pixels of <draw_size>, relative to <parent>.
-		
-		:getter: Returns the draw position.
-		:type: (int, int)
-		"""
+            p = self.parent.children_size
+            relativeWidth = p[0] * size[0]
+            relativeHeight = p[1] * size[1]
 
-		position = self.position
+            if self.relativeSizeAxes & Axes.X:
+                size = (relativeWidth, size[1])
 
-		if self.parent is not None:
-			parentSize = self.parent.children_size
-			parentPosition = self.parent.children_position
-			size = self.draw_size
-			anchor = self.anchor
-			origin = self.origin
+            if self.relativeSizeAxes & Axes.Y:
+                size = (size[0], relativeHeight)
 
-			def anchor_value(anchor):
-				if anchor & Anchor.X_LEFT:
-					anchorX = 0
-				elif anchor & Anchor.X_CENTER:
-					anchorX = 0.5
-				elif anchor & Anchor.X_RIGHT:
-					anchorX = 1
+        return size
 
-				if anchor & Anchor.Y_TOP:
-					anchorY = 0
-				elif anchor & Anchor.Y_CENTER:
-					anchorY = 0.5
-				elif anchor & Anchor.Y_BOTTOM:
-					anchorY = 1
+    @property
+    def draw_position(self):
+        """(int, int): The coordinates in pixels of `draw_size`, relative to
+            `parent`."""
 
-				return (anchorX, anchorY)
+        position = self.position
 
-			originPosition = [a * b for a, b in zip(anchor_value(origin), size)]
-			anchorPosition = [a * b for a, b in zip(anchor_value(anchor), parentSize)]
-			anchorPosition = [a + b for a, b in zip(anchorPosition, parentPosition)]
-			anchorOriginPosition = [a - b for a, b in zip(anchorPosition, originPosition)]
-			position = [a + b for a, b in zip(anchorOriginPosition, position)]
+        if self.parent is not None:
+            parentSize = self.parent.children_size
+            parentPosition = self.parent.children_position
+            size = self.draw_size
+            anchor = self.anchor
+            origin = self.origin
 
-		# place the draw position correctly inside margin
-		marginX = 0
-		marginY = 0
+            def anchor_value(anchor):
+                if anchor & Anchor.X_LEFT:
+                    anchorX = 0
+                elif anchor & Anchor.X_CENTER:
+                    anchorX = 0.5
+                elif anchor & Anchor.X_RIGHT:
+                    anchorX = 1
 
-		if self.anchor & Anchor.X_LEFT:
-			marginX = self.margin[2]
-		elif self.anchor & Anchor.X_RIGHT:
-			marginX = -self.margin[3]
+                if anchor & Anchor.Y_TOP:
+                    anchorY = 0
+                elif anchor & Anchor.Y_CENTER:
+                    anchorY = 0.5
+                elif anchor & Anchor.Y_BOTTOM:
+                    anchorY = 1
 
-		if self.anchor & Anchor.Y_TOP:
-			marginY = self.margin[0]
-		elif self.anchor & Anchor.Y_BOTTOM:
-			marginY = -self.margin[1]
+                return (anchorX, anchorY)
 
-		position = (position[0] + marginX, position[1] + marginY)
+            originPosition = [a * b for a, b in zip(anchor_value(origin), size)]
+            anchorPosition = [a * b for a, b in zip(anchor_value(anchor), parentSize)]
+            anchorPosition = [a + b for a, b in zip(anchorPosition, parentPosition)]
+            anchorOriginPosition = [a - b for a, b in zip(anchorPosition, originPosition)]
+            position = [a + b for a, b in zip(anchorOriginPosition, position)]
 
-		return position
+        # place the draw position correctly inside margin
+        marginX = 0
+        marginY = 0
 
-	@property
-	def layout_size(self):
-		"""
-		The size in pixels of this drawable.
-		
-		:getter: Returns the layout size.
-		:type: (int, int)
-		"""
+        if self.anchor & Anchor.X_LEFT:
+            marginX = self.margin[2]
+        elif self.anchor & Anchor.X_RIGHT:
+            marginX = -self.margin[3]
 
-		s = self.draw_size
+        if self.anchor & Anchor.Y_TOP:
+            marginY = self.margin[0]
+        elif self.anchor & Anchor.Y_BOTTOM:
+            marginY = -self.margin[1]
 
-		return (s[0] + (self.margin[2] + self.margin[3]), s[1] + (self.margin[0] + self.margin[1]))
+        position = (position[0] + marginX, position[1] + marginY)
 
-	@property
-	def layout_position(self):
-		"""
-		The coordinates in pixels of <layout_size>, relative to <parent>.
-		
-		:getter: Returns the layout position.
-		:type: (int, int)
-		"""
+        return position
 
-		p = self.draw_position
+    @property
+    def layout_size(self):
+        """(int, int): The size in pixels of this drawable to use when
+            calculating layout."""
 
-		return (p[0] - self.margin[2], p[1] - self.margin[0])
+        s = self.draw_size
 
-	"""
-	Render this drawable into an <Image>.
+        return (s[0] + (self.margin[2] + self.margin[3]), s[1] + (self.margin[0] + self.margin[1]))
 
-	:returns: This drawable rendered into an <Image>.
-	"""
-	def render(self):
-		raise NotImplementedError('Drawable subclasses must implement render')
+    @property
+    def layout_position(self):
+        """(int, int): The coordinates in pixels of `layout_size`, relative to
+            `parent`."""
 
-"""
-A type of <Drawable> that can have children <Drawable>s.
-"""
+        p = self.draw_position
+
+        return (p[0] - self.margin[2], p[1] - self.margin[0])
+
+    def render(self):
+        """
+        Render this drawable into an `Image`.
+
+        This method must be implemented by subclasses.
+
+        Returns:
+            Image: The render result.
+        """
+
+        raise NotImplementedError('Drawable subclasses must implement render')
+
 class Container(Drawable):
-	def __init__(self, children=[], **kwargs):
-		self.padding = (0, 0, 0, 0)
-		self.masking = True
+    """
+    A type of `Drawable` that can have children `Drawable`s.
 
-		super(Container, self).__init__(**kwargs)
-		self.children = []
+    Attributes:
+        children ([Drawable]): All the children of this container. Should not
+            be set directly from outside the class, but instead manipulated by
+            `Container.add` and `Container.remove`.
+            Defaults to an empty list.
 
-		for child in children:
-			self.add(child)
+        padding ((int, int, int, int)): The top, bottom, left, and right padding
+            of this container, respectively.
+            Defaults to `(0, 0, 0, 0)`
 
-	@property
-	def children_size(self):
-		"""
-		The size in pixels that the children of this container are allowed to occupy.
-		
-		:getter: Returns the children size.
-		:type: (int, int)
-		"""
+        masking (bool): Whether or not this container should mask its children.
+            For a container to mask means for it to clip off its children that
+            extend outside of its bounds. Disabling masking of course disables
+            this functionality for this container and its children can draw
+            outside of its bounds. This option only affects this container, not
+            the parent or children containers.
+            Defaults to `True`.
+    """
 
-		s = self.draw_size
+    def __init__(self, children=[], **kwargs):
+        self.padding = (0, 0, 0, 0)
+        self.masking = True
 
-		return (s[0] - (self.padding[2] + self.padding[3]), s[1] - (self.padding[0] + self.padding[1]))
+        super(Container, self).__init__(**kwargs)
+        self.children = []
 
-	@property
-	def children_position(self):
-		"""
-		The coordinates in pixel of <children_size>, relative to <parent>.
-		
-		:getter: Returns the children size.
-		:type: (int, int)
-		"""
+        for child in children:
+            self.add(child)
 
-		p = self.draw_position
+    @property
+    def children_size(self):
+        """(int, int): The size in pixels that the children of this container
+            are allowed to occupy."""
 
-		return (self.padding[2], self.padding[0])
+        s = self.draw_size
 
-	@property
-	def render_size(self):
-		"""
-		The size in pixels of this container when being rendered.
+        return (s[0] - (self.padding[2] + self.padding[3]), s[1] - (self.padding[0] + self.padding[1]))
 
-		This is specially added for <masking> so we can easily climb the
-		parent tree, and shouldn't be used for anything else.
-		
-		:getter: Returns the render size.
-		:type: (int, int)
-		"""
+    @property
+    def children_position(self):
+        """(int, int): The coordinates in pixels of `children_size`, relative to
+            `parent`."""
 
-		if not self.masking and self.parent:
-			return self.parent.render_size
-		else:
-			return self.draw_size
+        return (self.padding[2], self.padding[0])
 
-	@property
-	def render_position(self):
-		"""
-		The coordinates in pixels of <render_size>, relative to <parent>.
-		
-		:getter: Returns the render position.
-		:type: (int, int)
-		"""
+    @property
+    def render_size(self):
+        """
+        (int, int): The size in pixels of this container when being rendered.
 
-		if not self.masking:
-			if self.parent:
-				return [a + b for a, b in zip(self.parent.render_position, self.draw_position)]
-			else:
-				return self.draw_position
-		else:
-			return self.draw_position
+        This is specially added for `masking` so we can recursively climb the
+        parent tree and use their sizes, and shouldn't be used for anything
+        else.
+        """
 
-	"""
-	Add a child view.
+        if not self.masking and self.parent:
+            return self.parent.render_size
+        else:
+            return self.draw_size
 
-	:param child: The <Drawable> to add.
-	:param index: The index in <children> to insert <child> at.
-	"""
-	def add(self, child, index=-1):
-		child.parent = self
+    @property
+    def render_position(self):
+        """
+        (int, int): The coordinates in pixels of <render_size>, relative to
+            <parent>.
 
-		if index == -1:
-			self.children.append(child)
-		else:
-			self.children.insert(index, child)
+        Like `render_size`, this is specially added for traversing parents
+        recursively and using their position, and should not be used for
+        anything else.
+        """
 
-	"""
-	Remove a child view.
+        if not self.masking:
+            if self.parent:
+                return [a + b for a, b in zip(self.parent.render_position, self.draw_position)]
+            else:
+                return self.draw_position
+        else:
+            return self.draw_position
 
-	:param child: The <Drawable> to remove.
-	:raises ValueError: If <child> is not in this containers children.
-	"""
-	def remove(self, child):
-		if child.parent is not self:
-			raise ValueError('cannot remove a child that is not in this Container')
+    def add(self, child, index=-1):
+        """
+        Add a child drawable.
 
-		child.parent = None
-		self.children.remove(child)
+        Args:
+            child (Drawable): The drawable to add as a child.
 
-	def render(self):
-		container = Image.new('RGBA', round_tuple_values(self.render_size), (255, 255, 255, 0))
+            index (int): The index in `children` to insert `child` at, -1 is the
+                end of the array.
+                Defaults to -1.
+        """
 
-		for child in self.children:
-			if self.masking and (self.parent and self.parent.masking):
-				position = child.draw_position
-			else:
-				if isinstance(child, Container) and not child.masking:
-					position = (0, 0)
-				else:
-					position = [a + b for a, b in zip(self.render_position, child.draw_position)]
+        child.parent = self
 
-			container = paste_image(container, child.render(), round_tuple_values(position))
+        if index == -1:
+            self.children.append(child)
+        else:
+            self.children.insert(index, child)
 
-		return container
+    def remove(self, child):
+        """
+        Remove a child drawable.
 
-"""
-A type of <Drawable> that draws as a box with a colour.
-"""
+        Args:
+            child (Drawable): The child drawable to remove.
+
+        Raises:
+            ValueError: If `child` is not one of this containers children.
+        """
+
+        if child.parent is not self:
+            raise ValueError('cannot remove a child that is not in this Container')
+
+        child.parent = None
+        self.children.remove(child)
+
+    def render(self):
+        container = Image.new('RGBA', round_tuple_values(self.render_size), (255, 255, 255, 0))
+
+        for child in self.children:
+            if self.masking and (self.parent and self.parent.masking):
+                position = child.draw_position
+            else:
+                if isinstance(child, Container) and not child.masking:
+                    position = (0, 0)
+                else:
+                    position = [a + b for a, b in zip(self.render_position, child.draw_position)]
+
+            container = paste_image(container, child.render(), round_tuple_values(position))
+
+        return container
+
 class Box(Drawable):
-	def __init__(self, colour=(255, 255, 255), **kwargs):
-		super(Box, self).__init__(**kwargs)
-		self.colour = colour
+    """
+    A type of `Drawable` that draws as a box with a colour.
 
-	def render(self):
-		return Image.new('RGB', round_tuple_values(self.draw_size), self.colour)
+    Attributes:
+        colour ((int, int, int)): The RGB tuple colour to draw with.
+            Defaults to `(255, 255, 255)`.
+    """
 
-"""
-A type of <Drawable> that draws an <Image>.
-"""
+    def __init__(self, colour=(255, 255, 255), **kwargs):
+        super(Box, self).__init__(**kwargs)
+        self.colour = colour
+
+    def render(self):
+        return Image.new('RGB', round_tuple_values(self.draw_size), self.colour)
+
 class Texture(Drawable):
-	def __init__(self, sizeToImage=False, **kwargs):
-		self._image = None
-		self.sizeToImage = sizeToImage
+    """
+    A type of `Drawable` that draws an `Image`.
 
-		super(Texture, self).__init__(**kwargs)
+    Attributes:
+        sizeToImage (bool): Whether or not this texture should automatically
+            resize to the size of its image.
+    """
 
-	@property
-	def image(self):
-		"""
-		The <Image> that this texture should draw.
+    def __init__(self, sizeToImage=False, **kwargs):
+        self._image = None
+        self.sizeToImage = sizeToImage
 
-		:getter: Returns this textures image.
-		:setter: Sets this textures image.
-		:type: Image
-		"""
+        super(Texture, self).__init__(**kwargs)
 
-		return self._image
+    @property
+    def image(self):
+        """Image: The `Image` that this texture should draw."""
+        return self._image
 
-	@image.setter
-	def image(self, value):
-		self._image = value
+    @image.setter
+    def image(self, value):
+        self._image = value
 
-		if self.sizeToImage:
-			self.size = value.size
+        if self.sizeToImage:
+            self.size = value.size
 
-	def render(self):
-		return self.image.resize(round_tuple_values(self.draw_size), Image.ANTIALIAS)
+    def render(self):
+        return self.image.resize(round_tuple_values(self.draw_size), Image.ANTIALIAS)
 
-"""
-Display modes for <Text>.
-"""
 class TextMode(Enum):
-	"""
-	Place the text on a single line, without transformations.
-	"""
-	SINGLE_LINE = auto()
+    """
+    Display modes for `Text`.
 
-	"""
-	Squish the text to fit its size if it is too big to fit.
-	"""
-	SQUISH = auto()
+    Attributes:
+        SINGLE_LINE: Draw the text on a single line and auto-size the `Text` to
+            fit it.
 
-	"""
-	Wrap the text onto multiple lines to fit its size.
-	"""
-	WRAP = auto()
+        SQUISH: Draw the text on a single line and auto-size the `Text`s height
+            to fit, but squish it horizontally if its too big to display in the
+            `Text`s `width`.
 
-"""
-A type of <Drawable> that can draw text with fonts.
+        WRAP: Wrap the text to fit the `Text`s width.
+    """
 
-When using <TextMode.SINGLE_LINE>, you should not change the width or height.
-When using <TextMode.SQUISH>, you should not change the height.
-"""
+    SINGLE_LINE = auto()
+    SQUISH = auto()
+    WRAP = auto()
+
 class Text(Drawable):
-	"""
-	:param fontPath: The path to the true-type font to use to draw this text.
-	:param textColour: The colour to draw the text with.
-	:param textSize: The height in pixels to draw the text with.
-	:param text: The text to draw.
-	:param mode: The <TextMode> to draw the text with.
-	:param lineSpacing: the vertical line spacing when using <TextMode.WRAP>, unused otherwise.
-	"""
-	def __init__(self, fontPath='', textColour=(255, 255, 255), textSize=0, text='', mode=TextMode.SINGLE_LINE, lineSpacing=0, **kwargs):
-		super(Text, self).__init__(**kwargs)
+    """
+    A type of `Drawable` that can draw text with true type fonts.
 
-		# init the parameters so we dont crash when calling <apply_size> without all the parameters set
-		self.font = None
-		self._fontPath = None
-		self.textColour = None
-		self._textSize = None
-		self._text = None
+    Notes:
+        When using `TextMode.SINGLE_LINE`, you should not change the width or
+            height.
 
-		self.mode = mode
-		self.lineSpacing = lineSpacing
-		self.fontPath = fontPath
-		self.textColour = textColour
-		self.textSize = textSize
-		self.text = text
+        When using `TextMode.SQUISH`, you should not change the height.
 
-	@property
-	def fontPath(self):
-		"""
-		The path of the font that this text should use when drawing text.
+    Attributes:
+        textColour ((int, int, int)): The RGB tuple colour to draw the text
+            with.
+            Defaults to (255, 255, 255).
 
-		:getter: Returns this texts font path.
-		:setter: Sets this texts font path.
-		:type: string
-		"""
+        lineSpacing (int): The vertical space in pixels between lines when using
+            `TextMode.WRAP`, unused otherwise.
+            Defaults to 0.
+    """
 
-		return self._fontPath
+    def __init__(self, fontPath='', textColour=(255, 255, 255), textSize=0, text='', mode=TextMode.SINGLE_LINE, lineSpacing=0, **kwargs):
+        super(Text, self).__init__(**kwargs)
 
-	@fontPath.setter
-	def fontPath(self, value):
-		self._fontPath = value
-		self.update_font()
-		self.apply_size()
+        # init the parameters so we dont crash when calling <update_size> without all the parameters set
+        self.font = None
+        self._fontPath = None
+        self.textColour = None
+        self._textSize = None
+        self._text = None
+        self._mode = None
 
-	@property
-	def textSize(self):
-		"""
-		The height in pixels that this text should be drawn with.
+        self.lineSpacing = lineSpacing
+        self.fontPath = fontPath
+        self.textColour = textColour
+        self.textSize = textSize
+        self.text = text
+        self.mode = mode
 
-		:getter: Returns this texts size.
-		:setter: Sets this texts size.
-		:type: int
-		"""
+    @property
+    def fontPath(self):
+        """str: The path of the TTF file of the font that this text should use
+            when drawing text."""
 
-		return self._textSize
+        return self._fontPath
 
-	@textSize.setter
-	def textSize(self, value):
-		self._textSize = value
-		self.update_font()
-		self.apply_size()
+    @fontPath.setter
+    def fontPath(self, value):
+        self._fontPath = value
+        self.update_font()
+        self.update_size()
 
-	@property
-	def text(self):
-		"""
-		The text for this text to display.
+    @property
+    def textSize(self):
+        """int: The height in pixels that this text should draw its font with."""
+        return self._textSize
 
-		:getter: Returns this texts text.
-		:setter: Sets this texts text.
-		:type: string
-		"""
+    @textSize.setter
+    def textSize(self, value):
+        self._textSize = value
+        self.update_font()
+        self.update_size()
 
-		return self._text
+    @property
+    def text(self):
+        """str: The text for this text to display."""
+        return self._text
 
-	@text.setter
-	def text(self, value):
-		self._text = value
-		self.apply_size()
+    @text.setter
+    def text(self, value):
+        self._text = value
+        self.update_size()
 
-	"""
-	Get this texts font.
+    @property
+    def mode(self):
+        """TextMode: The mode for this text to use."""
+        return self._mode
 
-	:returns: An <ImageFont>.
-	"""
-	def update_font(self):
-		if self.fontPath and self.textSize:
-			if os.path.exists(self.fontPath):
-				self.font = ImageFont.truetype(self.fontPath, self.textSize)
-		else:
-			return None
+    @mode.setter
+    def mode(self, value):
+        self._mode = value
+        self.update_size()
 
-	"""
-	Correctly set the size of this text to fit <text> using <get_font>.
-	"""
-	def apply_size(self):
-		if self.text:
-			# wrap does not use text size, so dont bother calculating it
-			if self.font and self.mode is not TextMode.WRAP:
-				s = self.font.getsize(self.text)
+    def update_font(self):
+        """
+        Get the `ImageFont` specified by `fontPath` and `textSize`, and store it
+        in `font`.
+        """
 
-				if self.mode == TextMode.SINGLE_LINE:
-					self.size = s
-				elif self.mode == TextMode.SQUISH:
-					self.size = (self.size[0], s[1])
+        if self.fontPath and self.textSize:
+            if os.path.exists(self.fontPath):
+                self.font = ImageFont.truetype(self.fontPath, self.textSize)
 
-	def render(self):
-		"""
-		Get an <Image> for given text drawn in this <Text>s specified styling.
+    def update_size(self):
+        """
+        Update this size of this text to fit `text` using `font`.
+        """
 
-		:param text: The text to get an image of.
-		"""
-		def text_image(text):
-			temp = Image.new('RGBA', self.font.getsize(text), (255, 255, 255, 0))
-			draw = ImageDraw.Draw(temp)
-			draw.text((0, 0), text, self.textColour, font=self.font)
+        if self.text:
+            # wrap does not use text size, so dont bother calculating it
+            if self.font and self.mode is not TextMode.WRAP:
+                s = self.font.getsize(self.text)
 
-			return temp
+                if self.mode == TextMode.SINGLE_LINE:
+                    self.size = s
+                elif self.mode == TextMode.SQUISH:
+                    self.size = (self.size[0], s[1])
 
-		"""
-		Get the anchored position of an image on either the X or Y axis.
+    def render(self):
+        def text_image(text):
+            """
+            Get an `Image` for given text drawn in this texts specified styling.
 
-		:param imageSize: The width or height of the image to get the position of.
-		:param parentSize: The width or height of the parent to anchor <imageSize> inside of.
-		:returns: The anchored position of <imageSize>, relative to <parentSize>.
-		"""
-		def anchored_position(imageSize, parentSize):
-			if self.anchor & Anchor.X_LEFT or self.anchor & Anchor.Y_TOP:
-				return 0
-			elif self.anchor & Anchor.X_CENTER or self.anchor & Anchor.Y_CENTER:
-				return int((parentSize - imageSize) / 2)
-			elif self.anchor & Anchor.X_RIGHT or self.anchor & Anchor.Y_BOTTOM:
-				return parentSize - imageSize
+            Args:
+                text (str): The text to get an image of.
 
-		"""
-		Get the horizontal anchored position of an <Image> using <anchor>.
+            Returns:
+                Image: An image of `text`.
+            """
 
-		:param image: The <Image> to get the anchored position of.
-		:returns: The horizontal anchored position of <image>.
-		"""
-		def horizontal_position(image):
-			return anchored_position(image.size[0], size[0])
+            temp = Image.new('RGBA', self.font.getsize(text), (255, 255, 255, 0))
+            draw = ImageDraw.Draw(temp)
+            draw.text((0, 0), text, self.textColour, font=self.font)
 
-		"""
-		<horizontal_position>, but the vertical anchored position.
-		"""
-		def vertical_position(image):
-			return anchored_position(image.size[1], size[1])
+            return temp
 
-		size = round_tuple_values(self.draw_size)
-		drawImage = Image.new('RGBA', size, (255, 255, 255, 0))
+        def anchored_position(imageSize, parentSize):
+            """
+            Get the anchored position of an image on either the X or Y axis
+            using `anchor`.
 
-		if self.mode == TextMode.WRAP:
-			# get an estimate of how many characters there should be per-line
-			limit = int(size[0] / self.font.getsize('a')[0])
+            Args:
+                imageSize (float): The width or height of the image to get the
+                    position of.
 
-			textHeight = 0
-			lineImages = []
+                parentSize (float): The width or height of the parent to anchor
+                    `imageSize` inside of.
 
-			# get all the line images and the height of textImage
-			for line in textwrap.wrap(self.text, width=limit):
-				lineImage = text_image(line)
-				textHeight += lineImage.size[1] + self.lineSpacing
-				lineImages.append(lineImage)
+            Returns:
+                float: The anchored position of `imageSize`, relative to
+                    `parentSize`.
+            """
 
-			textHeight = max(textHeight - self.lineSpacing, 0)
-			textImage = Image.new('RGBA', (size[0], textHeight), (255, 255, 255, 0))
+            if self.anchor & Anchor.X_LEFT or self.anchor & Anchor.Y_TOP:
+                return 0
+            elif self.anchor & Anchor.X_CENTER or self.anchor & Anchor.Y_CENTER:
+                return int((parentSize - imageSize) / 2)
+            elif self.anchor & Anchor.X_RIGHT or self.anchor & Anchor.Y_BOTTOM:
+                return parentSize - imageSize
 
-			lineY = 0
+        def horizontal_position(image):
+            return anchored_position(image.size[0], size[0])
 
-			for lineImage in lineImages:
-				textImage = paste_image(textImage, lineImage, (horizontal_position(lineImage), lineY))
-				lineY += lineImage.size[1] + self.lineSpacing
-		else:
-			textImage = text_image(self.text)
+        def vertical_position(image):
+            return anchored_position(image.size[1], size[1])
 
-			# squish the text if we are squishing and the text needs to be squished
-			if self.mode == TextMode.SQUISH and size[0] < textImage.size[0]:
-				textImage = textImage.resize((size[0], textImage.size[1]), Image.ANTIALIAS)
+        size = round_tuple_values(self.draw_size)
+        drawImage = Image.new('RGBA', size, (255, 255, 255, 0))
 
-		# correctly horizontally and vertically place the text image
-		return paste_image(drawImage, textImage, (horizontal_position(textImage), vertical_position(textImage)));
+        if self.mode == TextMode.WRAP:
+            # get an estimate of how many characters there should be per-line
+            limit = int(size[0] / self.font.getsize('a')[0])
 
-"""
-A type of <Drawable> that can draw text with image files.
-"""
+            textHeight = 0
+            lineImages = []
+
+            # get all the line images and the height of textImage
+            for line in textwrap.wrap(self.text, width=limit):
+                lineImage = text_image(line)
+                textHeight += lineImage.size[1] + self.lineSpacing
+                lineImages.append(lineImage)
+
+            textHeight = max(textHeight - self.lineSpacing, 0)
+            textImage = Image.new('RGBA', (size[0], textHeight), (255, 255, 255, 0))
+
+            lineY = 0
+
+            # draw all the line images
+            for lineImage in lineImages:
+                textImage = paste_image(textImage, lineImage, (horizontal_position(lineImage), lineY))
+                lineY += lineImage.size[1] + self.lineSpacing
+        else:
+            textImage = text_image(self.text)
+
+            # squish the text if we are squishing and the text needs to be squished
+            if self.mode == TextMode.SQUISH and size[0] < textImage.size[0]:
+                textImage = textImage.resize((size[0], textImage.size[1]), Image.ANTIALIAS)
+
+        # correctly horizontally and vertically place the text image
+        return paste_image(drawImage, textImage, (horizontal_position(textImage), vertical_position(textImage)));
+
 class SpriteText(Drawable):
-	def __init__(self, fontPath='', text='', **kwargs):
-		super(SpriteText, self).__init__(**kwargs)
+    """
+    A type of `Drawable` that can draw text with a `SpriteFont`.
 
-		# same as <Text>, set the values beforehand so we can reference them in <update_size> without everything set
-		self.font = None
-		self._fontPath = None
-		self._text = None
+    Notes:
+        You should not change the size of this drawable as it automatically
+        resizes to fit its text.
+    """
 
-		self.fontPath = fontPath
-		self.text = text
+    def __init__(self, font=None, text='', **kwargs):
+        super(SpriteText, self).__init__(**kwargs)
 
-	@property
-	def fontPath(self):
-		"""
-		The path to the sprite font that this sprite text should use.
+        # same as `Text`, set the values beforehand so we can reference them in `update_size` without everything set
+        self._font = None
+        self._text = None
 
-		:getter: Returns this sprite texts font path.
-		:setter: Sets this sprite texts font path.
-		:type: string
-		"""
+        self.font = font
+        self.text = text
 
-		return self._fontPath
+    @property
+    def font(self):
+        """SpriteFont: The sprite font this sprite text should draw with."""
+        return self._font
 
-	@fontPath.setter
-	def fontPath(self, value):
-		self._fontPath = value
+    @font.setter
+    def font(self, value):
+        self._font = value
+        self.update_size()
 
-		if self.fontPath:
-			self.font = SpriteFont(self.fontPath)
-			self.update_size()
-		else:
-			self.font = None
-			self.size = (0, 0)
+    @property
+    def text(self):
+        """str: The text for this sprite text to display."""
+        return self._text
 
-	@property
-	def text(self):
-		"""
-		The text for this sprite text to display.
+    @text.setter
+    def text(self, value):
+        self._text = value
+        self.update_size()
 
-		:getter: Returns this sprite texts text.
-		:setter: Sets this sprite texts text.
-		:type: string
-		"""
+    def update_size(self):
+        """
+        Update the size of this sprite text to fit `text` using `font`.
+        """
 
-		return self._text
+        if self.text and self.font:
+            self.size = self.font.get_size(self.text)
 
-	@text.setter
-	def text(self, value):
-		self._text = value
-		self.update_size()
+    def render(self):
+        return self.font.get_image(self.text)
 
-	def update_size(self):
-		if self.text and self.font:
-			self.size = self.font.get_size(self.text)
-
-	def render(self):
-		return self.font.get_image(self.text)
-
-"""
-A font for <SpriteText>.
-"""
 class SpriteFont:
-	"""
-	:param path: The path to the sprite fonts folder.
-	"""
-	def __init__(self, path):
-		file = os.path.join(path, 'font.xml')
-		if os.path.exists(file):
-			tree = ET.parse(file)
-			root = tree.getroot()
+    """
+    A font for `SpriteText`.
 
-			if root.tag == 'font':
-				if 'width' in root.attrib and 'height' in root.attrib and 'spacing' in root.attrib:
-					self.characterSize = (int(root.get('width')), int(root.get('height')))
-					self.characterSpacing = int(root.get('spacing'))
-					self.characterFiles = dict((n.get('value'), n.text) for n in root.iter('character'))
-					self.path = path
-				else:
-					raise ValueError('the root <font> node in font.xml must specify \'width\', \'height\', and \'spacing\' attributes')
-			else:
-				raise ValueError('font.xml must contain a root <font> node')
-		else:
-			raise ValueError(f'could not find a font.xml in \'{path}\'')
+    Creating a Sprite Font:
+        Sprite fonts are a special kind of file used by drawables for simple
+        usage of fonts that are composed of static images.
 
-	"""
-	Get the size of a given string if it were drawn with this sprite font.
+        To create a sprite font, you first need to make a font.xml file. This
+        file specifies the different properties of the font such as character
+        size and spacing. The contents of the file should look something like
+        this:
 
-	:param text: The text to get the size of.
-	:returns: The size of <text> in this sprite font.
-	"""
-	def get_size(self, text):
-		return ((self.characterSize[0] + self.characterSpacing) * len(str(text)) + abs(self.characterSpacing), self.characterSize[1])
+        <font width="..." height="..." spacing="...">
+            ...
+        </font>
 
-	"""
-	Get an <Image> for text drawn with this sprite font.
+        replacing width, height and spacing with the values for your specific
+        font.
 
-	:param text: The text to draw.
-	:returns: An <Image> with <text> drawn with this sprite font.
-	"""
-	def get_image(self, text):
-		image = Image.new('RGBA', self.get_size(text), (255, 255, 255, 0))
+        Now with that setup, you can add your glyph files. These files should
+        all be the same resolution as specified by the width and height
+        attributes in the font file, placed in the same directory as the
+        font file, and named as the character they represent (e.g. 'a' would
+        be 'a.png', 'b' would be 'b.png', etc.) Though there are some characters
+        that won't work with this, such as system reserved characters in
+        filenames like '/'. This is where the font file comes in again. You can
+        map specific characters to specific files using character nodes in the
+        font node, as seen below:
 
-		lastX = 0
-		for char in text:
-			file = f'{char}.png'
+        <character value="...">file.png</character>
 
-			if char in self.characterFiles:
-				file = self.characterFiles[char]
+        replacing the value attribute with the character you want to map (e.g.
+        value="/"), and the contents of the node with the name of the file you
+        want to map it to (e.g. 'slash.png'). The result of this example should
+        look something like this:
 
-			file = os.path.join(self.path, file)
+        <font width="..." height="..." spacing="...">
+            <character value="/">slash.png</character>
+        </font>
 
-			if os.path.exists(file):
-				image = paste_image(image, Image.open(file), (lastX, 0))
-				lastX += (self.characterSize[0] + self.characterSpacing)
-			else:
-				raise ValueError(f'could not find file \'{file}\' for character \'{char}\'')
+        Note that character nodes are entirely optional, and only needed for
+        fonts that want to display system reserved filename characters.
 
-		return image
+        Now after adding all your glyphs your font is ready to be used in
+        drawables. Simply create a `SpriteFont` with the directory to the
+        folder containing the font file, and you should be good to go.
 
-"""
-A relative point in a box.
-"""
+    Attributes:
+        path (str): The path to this sprite fonts folder.
+
+        characterSize ((int, int)): The size in pixels of every character in
+            this font.
+
+        characterSpacing (int): The horizontal spacing in pixels between every
+            character in this font.
+
+        characterFiles ({str: str}): All the specified character files from the
+            font file, if any.
+    """
+
+    def __init__(self, path):
+        """
+        Raises:
+            ValueError: If the font at `path` is invalid in any way.
+        """
+
+        file = os.path.join(path, 'font.xml')
+        if os.path.exists(file):
+            tree = ET.parse(file)
+            root = tree.getroot()
+
+            if root.tag == 'font':
+                if 'width' in root.attrib and 'height' in root.attrib and 'spacing' in root.attrib:
+                    self.characterSize = (int(root.get('width')), int(root.get('height')))
+                    self.characterSpacing = int(root.get('spacing'))
+                    self.characterFiles = dict((n.get('value'), n.text) for n in root.iter('character'))
+                    self.path = path
+                else:
+                    raise ValueError('the root <font> node in font.xml must specify \'width\', \'height\', and \'spacing\' attributes')
+            else:
+                raise ValueError('font.xml must contain a root <font> node')
+        else:
+            raise ValueError(f'could not find a font.xml in \'{path}\'')
+
+    def get_size(self, text):
+        """
+        Get the size of a given string if it were drawn with this sprite font.
+
+        Args:
+            text (str): The text to get the size of.
+
+        Returns
+            (int, int): The size in pixels of `text`.
+        """
+
+        return ((self.characterSize[0] + self.characterSpacing) * len(str(text)) + abs(self.characterSpacing), self.characterSize[1])
+
+    def get_image(self, text):
+        """
+        Get an `Image` for text drawn with this sprite font.
+
+        Args:
+            text (str): The text to draw.
+
+        Returns:
+            Image: An image of `text` drawn with this sprite font.
+        """
+
+        image = Image.new('RGBA', self.get_size(text), (255, 255, 255, 0))
+
+        lastX = 0
+        for char in text:
+            file = f'{char}.png'
+
+            if char in self.characterFiles:
+                file = self.characterFiles[char]
+
+            file = os.path.join(self.path, file)
+
+            if os.path.exists(file):
+                image = paste_image(image, Image.open(file), (lastX, 0))
+                lastX += (self.characterSize[0] + self.characterSpacing)
+            else:
+                raise ValueError(f'could not find file \'{file}\' for character \'{char}\'')
+
+        return image
+
 class Anchor(Flag):
-	X_LEFT = auto()
-	X_CENTER = auto()
-	X_RIGHT = auto()
+    """
+    A relative point in a box.
+    """
 
-	Y_TOP = auto()
-	Y_CENTER = auto()
-	Y_BOTTOM = auto()
+    X_LEFT = auto()
+    X_CENTER = auto()
+    X_RIGHT = auto()
 
-	TOP_LEFT = X_LEFT | Y_TOP
-	TOP_CENTER = X_CENTER | Y_TOP
-	TOP_RIGHT = X_RIGHT | Y_TOP
+    Y_TOP = auto()
+    Y_CENTER = auto()
+    Y_BOTTOM = auto()
 
-	CENTER_LEFT = X_LEFT | Y_CENTER
-	CENTER = X_CENTER | Y_CENTER
-	CENTER_RIGHT = X_RIGHT | Y_CENTER
+    TOP_LEFT = X_LEFT | Y_TOP
+    TOP_CENTER = X_CENTER | Y_TOP
+    TOP_RIGHT = X_RIGHT | Y_TOP
 
-	BOTTOM_LEFT = X_LEFT | Y_BOTTOM
-	BOTTOM_CENTER = X_CENTER | Y_BOTTOM
-	BOTTOM_RIGHT = X_RIGHT | Y_BOTTOM
+    CENTER_LEFT = X_LEFT | Y_CENTER
+    CENTER = X_CENTER | Y_CENTER
+    CENTER_RIGHT = X_RIGHT | Y_CENTER
 
-"""
-Two dimensional axes.
-"""
+    BOTTOM_LEFT = X_LEFT | Y_BOTTOM
+    BOTTOM_CENTER = X_CENTER | Y_BOTTOM
+    BOTTOM_RIGHT = X_RIGHT | Y_BOTTOM
+
 class Axes(Flag):
-	NONE = 0
-	X = auto()
-	Y = auto()
-	BOTH = X | Y
+    """
+    Two dimensional axes.
+    """
+
+    NONE = 0
+    X = auto()
+    Y = auto()
+    BOTH = X | Y
