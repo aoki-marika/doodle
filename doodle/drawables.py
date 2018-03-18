@@ -23,7 +23,7 @@ class Drawable:
 
     Args:
         Drawable arguments are done in a way that allows quickly creating large
-        draw hierarchies, and is reminiscent of C# object initialisers. The
+        draw hierarchies, and is reminiscent of C# object initializers. The
         `kwargs` are all used to set the attribute of their key to their value,
         which allows quickly doing things such as below:
 
