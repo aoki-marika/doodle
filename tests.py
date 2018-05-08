@@ -1,5 +1,5 @@
 
-from doodle import Drawable, Container, Box, Texture, Text, SpriteText, SpriteFont, Anchor, Axes, Drawing, TextMode
+from doodle import Drawable, Container, Box, Texture, Text, SpriteText, SpriteFont, Anchor, Axes, Drawing, TextMode, GradientType, GradientPoint, draw_gradient
 
 from PIL import Image
 
@@ -462,12 +462,23 @@ def drawing_test():
     drawing = Drawing('tests/assets/drawing.xml', values)
     drawing.render().save('tests/drawing_test.png')
 
+def gradient_test():
+    points = [
+        GradientPoint((255, 0, 0), 0),
+        GradientPoint((0, 255, 0), 0.25),
+        GradientPoint((0, 0, 255), 0.75),
+        GradientPoint((0, 0, 0), 1),
+    ]
+
+    draw_gradient(400, 400, GradientType.LINEAR, points).save('tests/gradient_test.png')
+
 if __name__ == '__main__':
-    container_test()
-    margin_padding_test()
-    masking_test()
-    component_test()
-    texture_test()
-    text_test()
-    sprite_text_test()
-    drawing_test()
+    # container_test()
+    # margin_padding_test()
+    # masking_test()
+    # component_test()
+    # texture_test()
+    # text_test()
+    # sprite_text_test()
+    # drawing_test()
+    gradient_test()
