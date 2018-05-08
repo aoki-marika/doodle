@@ -464,13 +464,13 @@ def drawing_test():
 
 def gradient_test():
     points = [
-        GradientPoint((255, 0, 0), 0),
-        GradientPoint((0, 255, 0), 0.25),
-        GradientPoint((0, 0, 255), 0.75),
-        GradientPoint((0, 0, 0), 1),
+        GradientPoint(0, (255, 0, 0), 0.6),
+        GradientPoint(0.25, (0, 255, 0), 0.25),
+        GradientPoint(0.75, (0, 0, 255), 0.25),
+        GradientPoint(1, (0, 0, 0)),
     ]
 
-    draw_gradient(400, 400, GradientType.LINEAR, points).save('tests/gradient_test.png')
+    draw_gradient(400, 400, GradientType.LINEAR, points, 0).save('tests/gradient_test.png')
 
 if __name__ == '__main__':
     # container_test()
