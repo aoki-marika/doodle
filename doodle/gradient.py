@@ -5,6 +5,7 @@ A pillow utility for creating gradients.
 
 import math
 
+from copy import copy
 from enum import Enum, auto
 from PIL import Image
 from PIL import ImageDraw
@@ -38,6 +39,22 @@ def gradient(percent, startValue, endValue, middle):
     return startValue + t * (endValue - startValue);
 
 def gradient_tuple(percent, start, end, middle):
+    """
+    Call `gradient` with an RGB(A) tuple.
+
+    Args:
+        percent (float): See `gradient`.
+
+        start ((int, int, int)): The beginning RGB(A) colour tuple.
+
+        end ((int, int, int)): The ending RGB(A) colour tuple.
+
+        middle (float): See `gradient`.
+
+    Returns:
+        (int, int, int, int): The value between `start` and `end` at `percent`,
+            taking into account `middle`.
+    """
     colour = ()
 
     for i in range(3):
@@ -86,6 +103,12 @@ def draw_gradient(width, height, type, points, direction = None):
     draw = ImageDraw.Draw(image)
 
     points.sort(key=lambda p: p.position)
+
+    # make sure there is always a final point at the end
+    if points[-1].position < 1:
+        p = copy(points[-1])
+        p.position = 1
+        points.append(p)
 
     startIndex = 0
     endIndex = 1

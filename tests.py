@@ -396,7 +396,6 @@ def text_test():
                 anchor=Anchor.CENTER,
                 origin=Anchor.CENTER,
                 fontPath=font,
-                # textColour=(0, 255, 255),
                 textSize=30,
                 text='hello, world!',
                 gradientType=GradientType.LINEAR,
@@ -404,7 +403,6 @@ def text_test():
                 gradientPoints=[
                     GradientPoint(0.6, (244, 244, 244), 0.75),
                     GradientPoint(0.7, (180, 180, 180), 0.25),
-                    GradientPoint(1, (244, 244, 244)),
                 ],
             ),
         ],
