@@ -29,7 +29,6 @@ def container_test():
                 origin=Anchor.CENTER,
                 relativeSizeAxes=Axes.BOTH,
                 size=(0.25, 0.25),
-                colour=(255, 255, 255),
                 gradientType=GradientType.LINEAR,
                 gradientDirection=Direction.VERTICAL,
                 gradientPoints=[
@@ -397,9 +396,16 @@ def text_test():
                 anchor=Anchor.CENTER,
                 origin=Anchor.CENTER,
                 fontPath=font,
-                textColour=(0, 255, 255),
+                # textColour=(0, 255, 255),
                 textSize=30,
                 text='hello, world!',
+                gradientType=GradientType.LINEAR,
+                gradientDirection=Direction.VERTICAL,
+                gradientPoints=[
+                    GradientPoint(0.6, (244, 244, 244), 0.75),
+                    GradientPoint(0.7, (180, 180, 180), 0.25),
+                    GradientPoint(1, (244, 244, 244)),
+                ],
             ),
         ],
     )
@@ -487,12 +493,12 @@ def gradient_test():
     image.save('tests/gradient_test.png')
 
 if __name__ == '__main__':
-    container_test()
+    # container_test()
     # margin_padding_test()
     # masking_test()
     # component_test()
     # texture_test()
-    # text_test()
+    text_test()
     # sprite_text_test()
     # drawing_test()
     # gradient_test()

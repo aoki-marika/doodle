@@ -219,8 +219,12 @@ class Drawable:
 
         return (p[0] - self.margin[2], p[1] - self.margin[0])
 
+    @property
+    def has_gradient(self):
+        return self.gradientType and self.gradientPoints
+
     def get_gradient(self, width, height):
-        if self.gradientType and self.gradientPoints:
+        if self.has_gradient:
             return draw_gradient(width, height, self.gradientType, self.gradientPoints, self.gradientDirection)
 
         return None
@@ -389,10 +393,9 @@ class Box(Drawable):
 
     def render(self):
         size = round_tuple_values(self.draw_size)
-        gradient = self.get_gradient(size[0], size[1])
 
-        if gradient:
-            return gradient
+        if self.has_gradient:
+            return self.get_gradient(size[0], size[1])
         else:
             return Image.new('RGB', size, self.colour)
 
@@ -448,6 +451,8 @@ class TextMode(Enum):
 class Text(Drawable):
     """
     A type of `Drawable` that can draw text with true type fonts.
+
+    Supports gradients.
 
     Notes:
         When using `TextMode.SINGLE_LINE`, you should not change the width or
@@ -566,7 +571,13 @@ class Text(Drawable):
 
             temp = Image.new('RGBA', self.font.getsize(text), (255, 255, 255, 0))
             draw = ImageDraw.Draw(temp)
-            draw.text((0, 0), text, self.textColour, font=self.font)
+
+            if self.has_gradient:
+                c = (255, 255, 255)
+            else:
+                c = self.textColour
+
+            draw.text((0, 0), text, c, font=self.font)
 
             return temp
 
@@ -632,8 +643,15 @@ class Text(Drawable):
             if self.mode == TextMode.SQUISH and size[0] < textImage.size[0]:
                 textImage = textImage.resize((size[0], textImage.size[1]), Image.ANTIALIAS)
 
+        renderedText = paste_image(drawImage, textImage, (horizontal_position(textImage), vertical_position(textImage)))
+
+        if self.has_gradient:
+            gradient = self.get_gradient(size[0], size[1])
+
+            renderedText = Image.composite(gradient, renderedText, renderedText)
+
         # correctly horizontally and vertically place the text image
-        return paste_image(drawImage, textImage, (horizontal_position(textImage), vertical_position(textImage)));
+        return renderedText;
 
 class SpriteText(Drawable):
     """
