@@ -1,5 +1,5 @@
 
-from doodle import Drawable, Container, Box, Texture, Text, SpriteText, SpriteFont, Anchor, Axes, Drawing, TextMode, GradientType, GradientPoint, draw_gradient
+from doodle import Drawable, Container, Box, Texture, Text, SpriteText, SpriteFont, Anchor, Axes, Drawing, TextMode, Direction, GradientType, GradientPoint, draw_gradient
 
 from PIL import Image
 
@@ -30,6 +30,12 @@ def container_test():
                 relativeSizeAxes=Axes.BOTH,
                 size=(0.25, 0.25),
                 colour=(255, 255, 255),
+                gradientType=GradientType.LINEAR,
+                gradientDirection=Direction.VERTICAL,
+                gradientPoints=[
+                    GradientPoint(0, (255, 255, 255)),
+                    GradientPoint(1, (0, 0, 0)),
+                ],
             ),
             Container(
                 anchor=Anchor.BOTTOM_RIGHT,
@@ -470,8 +476,8 @@ def gradient_test():
         GradientPoint(1, (0, 0, 0)),
     ]
 
-    horizontal = draw_gradient(200, 400, GradientType.LINEAR, points, Axes.X)
-    vertical = draw_gradient(200, 400, GradientType.LINEAR, points, Axes.Y)
+    horizontal = draw_gradient(200, 400, GradientType.LINEAR, points, Direction.HORIZONTAL)
+    vertical = draw_gradient(200, 400, GradientType.LINEAR, points, Direction.VERTICAL)
 
     image = Image.new('RGBA', (400, 400), (255, 255, 255, 0))
 
@@ -481,7 +487,7 @@ def gradient_test():
     image.save('tests/gradient_test.png')
 
 if __name__ == '__main__':
-    # container_test()
+    container_test()
     # margin_padding_test()
     # masking_test()
     # component_test()
@@ -489,4 +495,4 @@ if __name__ == '__main__':
     # text_test()
     # sprite_text_test()
     # drawing_test()
-    gradient_test()
+    # gradient_test()

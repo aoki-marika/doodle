@@ -13,6 +13,7 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 
+from .gradient import draw_gradient
 from .utils import round_tuple_values, paste_image
 
 # todo: only recalculate draw/layout/render size/position when values change, not on every get
@@ -78,6 +79,9 @@ class Drawable:
         self.origin = Anchor.TOP_LEFT
         self.relativeSizeAxes = Axes.NONE
         self.margin = (0, 0, 0, 0)
+        self.gradientType = None
+        self.gradientPoints = None
+        self.gradientDirection = None
 
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -214,6 +218,12 @@ class Drawable:
         p = self.draw_position
 
         return (p[0] - self.margin[2], p[1] - self.margin[0])
+
+    def get_gradient(self, width, height):
+        if self.gradientType and self.gradientPoints:
+            return draw_gradient(width, height, self.gradientType, self.gradientPoints, self.gradientDirection)
+
+        return None
 
     def render(self):
         """
@@ -366,6 +376,8 @@ class Box(Drawable):
     """
     A type of `Drawable` that draws as a box with a colour.
 
+    Supports gradients.
+
     Attributes:
         colour ((int, int, int)): The RGB tuple colour to draw with.
             Defaults to `(255, 255, 255)`.
@@ -376,7 +388,13 @@ class Box(Drawable):
         self.colour = colour
 
     def render(self):
-        return Image.new('RGB', round_tuple_values(self.draw_size), self.colour)
+        size = round_tuple_values(self.draw_size)
+        gradient = self.get_gradient(size[0], size[1])
+
+        if gradient:
+            return gradient
+        else:
+            return Image.new('RGB', size, self.colour)
 
 class Texture(Drawable):
     """

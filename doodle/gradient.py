@@ -9,8 +9,6 @@ from enum import Enum, auto
 from PIL import Image
 from PIL import ImageDraw
 
-from .drawables import Axes
-
 # todo: midpoints beyond 0.5 are broken
 
 def gradient(percent, startValue, endValue, middle):
@@ -55,7 +53,7 @@ def gradient_tuple(percent, start, end, middle):
 
     return colour
 
-def draw_gradient(width, height, type, points, direction = Axes.NONE):
+def draw_gradient(width, height, type, points, direction = None):
     """
     Render a gradient to an `Image`.
 
@@ -69,8 +67,7 @@ def draw_gradient(width, height, type, points, direction = Axes.NONE):
         points ([GradientPoint]): An array of `GradientPoint`s used to draw the
             gradient.
 
-        direction (Axes): The direction of the gradient. X for horizontal and Y
-            for Vertical. Only used for `GradientType.LINEAR`.
+        direction (Direction): The direction of the gradient.
 
     Returns:
         Image: A gradient made from the given arguments, rendered into an image.
@@ -78,6 +75,9 @@ def draw_gradient(width, height, type, points, direction = Axes.NONE):
 
     if len(points) < 2:
         raise ValueError('all gradients must have at least two points')
+
+    if type == GradientType.LINEAR and not direction:
+        raise ValueError('all linear gradients must specify a direction')
 
     image = Image.new('RGBA', (width, height), (255, 255, 255, 0))
     draw = ImageDraw.Draw(image)
@@ -88,9 +88,9 @@ def draw_gradient(width, height, type, points, direction = Axes.NONE):
     endIndex = 1
 
     if type == GradientType.LINEAR:
-        if direction == Axes.X:
+        if direction == Direction.HORIZONTAL:
             distance = width
-        elif direction == Axes.Y:
+        elif direction == Direction.VERTICAL:
             distance = height
 
     for i in range(distance):
@@ -98,10 +98,10 @@ def draw_gradient(width, height, type, points, direction = Axes.NONE):
         end = points[endIndex]
 
         if type == GradientType.LINEAR:
-            if direction == Axes.X:
+            if direction == Direction.HORIZONTAL:
                 startPosition = float(width) * start.position
                 endPosition = float(width) * end.position
-            elif direction == Axes.Y:
+            elif direction == Direction.VERTICAL:
                 startPosition = float(height) * start.position
                 endPosition = float(height) * end.position
 
@@ -111,10 +111,10 @@ def draw_gradient(width, height, type, points, direction = Axes.NONE):
         colour = gradient_tuple(percentage, start.colour, end.colour, start.middle)
 
         if type == GradientType.LINEAR:
-            if direction == Axes.X:
+            if direction == Direction.HORIZONTAL:
                 start = (i, 0)
                 end = (i, height)
-            elif direction == Axes.Y:
+            elif direction == Direction.VERTICAL:
                 start = (0, i)
                 end = (width, i)
 
@@ -125,6 +125,14 @@ def draw_gradient(width, height, type, points, direction = Axes.NONE):
             endIndex = min(endIndex + 1, len(points) - 1)
 
     return image
+
+class Direction(Enum):
+    """
+    The different directions for `GradientType.LINEAR`.
+    """
+
+    HORIZONTAL = auto()
+    VERTICAL = auto()
 
 class GradientType(Enum):
     """
