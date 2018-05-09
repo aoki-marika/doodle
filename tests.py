@@ -464,13 +464,21 @@ def drawing_test():
 
 def gradient_test():
     points = [
-        GradientPoint(0, (255, 0, 0), 0.6),
-        GradientPoint(0.25, (0, 255, 0), 0.25),
+        GradientPoint(0, (255, 0, 0), 0.1),
+        GradientPoint(0.25, (0, 255, 0)),
         GradientPoint(0.75, (0, 0, 255), 0.25),
         GradientPoint(1, (0, 0, 0)),
     ]
 
-    draw_gradient(400, 400, GradientType.LINEAR, points, 0).save('tests/gradient_test.png')
+    horizontal = draw_gradient(200, 400, GradientType.LINEAR, points, Axes.X)
+    vertical = draw_gradient(200, 400, GradientType.LINEAR, points, Axes.Y)
+
+    image = Image.new('RGBA', (400, 400), (255, 255, 255, 0))
+
+    image.paste(horizontal, (0, 0))
+    image.paste(vertical, (200, 0))
+
+    image.save('tests/gradient_test.png')
 
 if __name__ == '__main__':
     # container_test()
