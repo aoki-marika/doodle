@@ -133,8 +133,6 @@ def draw_gradient(width, height, type, points, direction = None):
                 endPosition = float(height) * end.position
 
         percentage = (i - startPosition) / (endPosition - startPosition)
-        pointIndex = round(len(points) * percentage)
-
         colour = gradient_tuple(percentage, start.colour, end.colour, start.middle)
 
         if type == GradientType.LINEAR:

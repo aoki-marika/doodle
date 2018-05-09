@@ -69,6 +69,15 @@ class Drawable:
 
         size ((float, float)): The size of this drawable.
             Defaults to (0, 0).
+
+        gradientType (GradientType): The type of gradient for this drawable,
+            optional.
+
+        gradientDirection (Direction): The direction for the gradient of this
+            drawable, only applies if `gradientType` is `LINEAR`.
+
+        gradientPoints ([GradientPoint]): An array of gradient points to draw
+            this drawables gradient with.
     """
 
     def __init__(self, width=0, height=0, x=0, y=0, **kwargs):
@@ -80,8 +89,8 @@ class Drawable:
         self.relativeSizeAxes = Axes.NONE
         self.margin = (0, 0, 0, 0)
         self.gradientType = None
-        self.gradientPoints = None
         self.gradientDirection = None
+        self.gradientPoints = None
 
         for key, value in kwargs.items():
             setattr(self, key, value)

@@ -246,6 +246,13 @@ class Element(Drawable):
     """
     A `Drawable` that is loaded from an XML element.
 
+    `gradient-point` Usage:
+        #colour [position] [middle], #colour2...
+
+        position and middle are optional. position will default to dividing the
+        amount of points equally and going to the point representing its index.
+        middle will default to `0.5`.
+
     Element Attributes:
         size: Sets both `width` and `height`, ignores `width` and `height`.
 
