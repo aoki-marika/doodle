@@ -36,6 +36,7 @@ def gradient(percent, startValue, endValue, middle):
         t = 0.5 * (percent / 1)
     else:
         t = 0.5 * (percent / 1) / middle
+
     return startValue + t * (endValue - startValue);
 
 def gradient_tuple(percent, start, end, middle):

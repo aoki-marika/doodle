@@ -14,7 +14,7 @@
 		</switch>
 		<container relative-size-axes="both" size="1" padding="20">
 			<sprite-text font="image-font">50/60</sprite-text>
-			<text anchor="top-center" origin="top-center" margin-top="20" font="concert-one.ttf" font-size="30" colour="000000">{switch_value}%</text>
+			<text anchor="top-center" origin="top-center" margin-top="20" font="concert-one.ttf" font-size="30" gradient-type="linear" gradient-direction="vertical" gradient-points="#ff0000 0.3, #00000000, #0000ff">{switch_value}%</text>
 			<sprite-text anchor="top-right" origin="top-right" font="image-font">60/50</sprite-text>
 			<switch value="{switch_value}" anchor="bottom-center" origin="bottom-center" width="100" height="100">
 				<box relative-size-axes="both" size="1" colour="ffff00"/>
@@ -31,6 +31,9 @@
 			<container anchor="bottom-left" origin="bottom-left" width="100" height="100">
 				<box relative-size-axes="both" size="1" colour="0000ff"/>
 				<text anchor="center" origin="center" relative-size-axes="both" size="1" font="concert-one.ttf" font-size="12" mode="wrap" line-spacing="3" colour="ffffff">very long, run on sentence that should wrap around and be centered horizontally. also, it extends outside the bounds of its parent.</text>
+			</container>
+			<container anchor="bottom-right" origin="bottom-right" width="100" height="100">
+				<box relative-size-axes="both" size="1" gradient-type="linear" gradient-direction="horizontal" gradient-points="#00ff00 0 0.25, #ff0000 0.5 0.25, #0000ff33"/>
 			</container>
 		</container>
 	</progress>

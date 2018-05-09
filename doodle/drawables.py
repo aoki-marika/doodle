@@ -647,7 +647,6 @@ class Text(Drawable):
 
         if self.has_gradient:
             gradient = self.get_gradient(size[0], size[1])
-
             renderedText = Image.composite(gradient, renderedText, renderedText)
 
         # correctly horizontally and vertically place the text image

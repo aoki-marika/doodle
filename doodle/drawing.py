@@ -17,6 +17,7 @@ import os
 import xml.etree.ElementTree as ET
 
 from doodle import Drawable, Container, Box, Texture, Text, SpriteText, SpriteFont, Anchor, Axes, TextMode
+from .gradient import Direction, GradientType, GradientPoint
 from PIL import Image
 
 def anchor_from_string(string):
@@ -116,7 +117,9 @@ def colour_from_string(string):
     """
 
     string = string.lstrip('#')
-    return tuple(int(string[i : i + 2], 16) for i in (0, 2, 4))
+    stringBytes = bytearray.fromhex(string)
+
+    return tuple(int(b) for b in stringBytes)
 
 def bool_from_string(string):
     """
@@ -155,6 +158,55 @@ def operator_from_string(string):
         string = string.lower()
         if string in operators:
             return operators[string]
+        else:
+            return None
+    else:
+        return None
+
+def direction_from_string(string):
+    """
+    Get a `Direction` from a string.
+
+    Args:
+        string (str): The string to parse.
+
+    Returns:
+        Direction: A direction if `string` matched one, or None if not.
+    """
+
+    if string:
+        directions = {
+            'horizontal': Direction.HORIZONTAL,
+            'vertical': Direction.VERTICAL,
+        }
+
+        string = string.lower()
+        if string in directions:
+            return directions[string]
+        else:
+            return None
+    else:
+        return None
+
+def gradient_type_from_string(string):
+    """
+    Get a `GradientType` from a string.
+
+    Args:
+        string (str): The string to parse.
+
+    Returns:
+        GradientType: A direction if `string` matched one, or None if not.
+    """
+
+    if string:
+        types = {
+            'linear': GradientType.LINEAR,
+        }
+
+        string = string.lower()
+        if string in types:
+            return types[string]
         else:
             return None
     else:
@@ -221,6 +273,8 @@ class Element(Drawable):
         self.x = float(xml.get('x') or 0)
         self.y = float(xml.get('y') or 0)
         self.relativeSizeAxes = axes_from_string(xml.get('relative-size-axes')) or Axes.NONE
+        self.gradientType = gradient_type_from_string(xml.get('gradient-type'))
+        self.gradientDirection = direction_from_string(xml.get('gradient-direction'))
 
         if 'size' in xml.attrib:
             s = float(xml.get('size'))
@@ -239,6 +293,30 @@ class Element(Drawable):
                 float(xml.get('margin-left') or 0),
                 float(xml.get('margin-right') or 0),
             )
+
+        if 'gradient-points' in xml.attrib:
+            points = xml.get('gradient-points').split(',')
+            points = [p.strip() for p in points]
+
+            if len(points) > 0:
+                self.gradientPoints = []
+
+            for i in range(len(points)):
+                components = points[i].split(' ')
+
+                colour = colour_from_string(components[0])
+
+                if len(components) >= 2:
+                    position = float(components[1])
+                else:
+                    position = (1.0 / (len(points) - 1)) * i
+
+                if len(components) >= 3:
+                    middle = float(components[2])
+                else:
+                    middle = 0.5
+
+                self.gradientPoints.append(GradientPoint(position, colour, middle))
 
     def load(self, drawing):
         """
@@ -311,7 +389,8 @@ class BoxElement(Element, Box):
         super(Box, self).__init__()
         super(BoxElement, self).__init__(xml)
 
-        self.colour = colour_from_string(xml.get('colour') or '')
+        if 'colour' in xml.attrib:
+            self.colour = colour_from_string(xml.get('colour'))
 
 class TextureElement(Element, Texture):
     """
@@ -356,11 +435,13 @@ class TextElement(Element, Text):
         super(TextElement, self).__init__(xml)
 
         self.relativeFontPath = xml.get('font')
-        self.textColour = colour_from_string(xml.get('colour') or '')
         self.textSize = int(xml.get('font-size') or 0)
         self.text = xml.text
         self.mode = text_mode_from_string(xml.get('mode')) or TextMode.SINGLE_LINE
         self.lineSpacing = int(xml.get('line-spacing') or 0)
+
+        if 'colour' in xml.attrib:
+            self.textColour = colour_from_string(xml.get('colour'))
 
     def load(self, drawing):
         self.text = drawing.format_string(self.text)
