@@ -1,5 +1,5 @@
 
-from doodle import Drawable, Container, Box, Texture, Text, SpriteText, SpriteFont, Anchor, Axes, Drawing, TextMode, Direction, GradientType, GradientPoint, draw_gradient
+from doodle import Drawable, Container, Box, Texture, Text, SpriteText, SpriteFont, Anchor, Axes, Drawing, TextMode, Direction, GradientType, GradientStop, draw_gradient
 
 from PIL import Image
 
@@ -31,9 +31,9 @@ def container_test():
                 size=(0.25, 0.25),
                 gradientType=GradientType.LINEAR,
                 gradientDirection=Direction.VERTICAL,
-                gradientPoints=[
-                    GradientPoint(0, (255, 255, 255)),
-                    GradientPoint(1, (0, 0, 0)),
+                gradientStops=[
+                    GradientStop(0, (255, 255, 255)),
+                    GradientStop(1, (0, 0, 0)),
                 ],
             ),
             Container(
@@ -400,9 +400,9 @@ def text_test():
                 text='hello, world!',
                 gradientType=GradientType.LINEAR,
                 gradientDirection=Direction.VERTICAL,
-                gradientPoints=[
-                    GradientPoint(0.6, (244, 244, 244), 0.75),
-                    GradientPoint(0.7, (180, 180, 180), 0.25),
+                gradientStops=[
+                    GradientStop(0.6, (244, 244, 244), 0.75),
+                    GradientStop(0.7, (180, 180, 180), 0.25),
                 ],
             ),
         ],
@@ -474,10 +474,10 @@ def drawing_test():
 
 def gradient_test():
     points = [
-        GradientPoint(0, (255, 0, 0), 0.1),
-        GradientPoint(0.25, (0, 255, 0)),
-        GradientPoint(0.75, (0, 0, 255), 0.25),
-        GradientPoint(1, (0, 0, 0)),
+        GradientStop(0, (255, 0, 0), 0.1),
+        GradientStop(0.25, (0, 255, 0)),
+        GradientStop(0.75, (0, 0, 255), 0.25),
+        GradientStop(1, (0, 0, 0)),
     ]
 
     horizontal = draw_gradient(200, 400, GradientType.LINEAR, points, Direction.HORIZONTAL)

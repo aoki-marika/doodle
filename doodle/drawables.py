@@ -76,7 +76,7 @@ class Drawable:
         gradientDirection (Direction): The direction for the gradient of this
             drawable, only applies if `gradientType` is `LINEAR`.
 
-        gradientPoints ([GradientPoint]): An array of gradient points to draw
+        gradientStops ([GradientStop]): An array of gradient stops to draw
             this drawables gradient with.
     """
 
@@ -90,7 +90,7 @@ class Drawable:
         self.margin = (0, 0, 0, 0)
         self.gradientType = None
         self.gradientDirection = None
-        self.gradientPoints = None
+        self.gradientStops = None
 
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -230,11 +230,11 @@ class Drawable:
 
     @property
     def has_gradient(self):
-        return self.gradientType and self.gradientPoints
+        return self.gradientType and self.gradientStops
 
     def get_gradient(self, width, height):
         if self.has_gradient:
-            return draw_gradient(width, height, self.gradientType, self.gradientPoints, self.gradientDirection)
+            return draw_gradient(width, height, self.gradientType, self.gradientStops, self.gradientDirection)
 
         return None
 

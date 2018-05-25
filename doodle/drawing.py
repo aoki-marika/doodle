@@ -17,7 +17,7 @@ import os
 import xml.etree.ElementTree as ET
 
 from doodle import Drawable, Container, Box, Texture, Text, SpriteText, SpriteFont, Anchor, Axes, TextMode
-from .gradient import Direction, GradientType, GradientPoint
+from .gradient import Direction, GradientType, GradientStop
 from PIL import Image
 
 def anchor_from_string(string):
@@ -246,11 +246,11 @@ class Element(Drawable):
     """
     A `Drawable` that is loaded from an XML element.
 
-    `gradient-point` Usage:
+    `gradient-stops` Usage:
         #colour [position] [middle], #colour2...
 
         position and middle are optional. position will default to dividing the
-        amount of points equally and going to the point representing its index.
+        amount of stops equally and going to the step representing its index.
         middle will default to `0.5`.
 
     Element Attributes:
@@ -301,29 +301,29 @@ class Element(Drawable):
                 float(xml.get('margin-right') or 0),
             )
 
-        if 'gradient-points' in xml.attrib:
-            points = xml.get('gradient-points').split(',')
-            points = [p.strip() for p in points]
+        if 'gradient-stops' in xml.attrib:
+            stops = xml.get('gradient-stops').split(',')
+            stops = [s.strip() for s in stops]
 
-            if len(points) > 0:
-                self.gradientPoints = []
+            if len(stops) > 0:
+                self.gradientStops = []
 
-            for i in range(len(points)):
-                components = points[i].split(' ')
+            for i in range(len(stops)):
+                components = stops[i].split(' ')
 
                 colour = colour_from_string(components[0])
 
                 if len(components) >= 2:
                     position = float(components[1])
                 else:
-                    position = (1.0 / (len(points) - 1)) * i
+                    position = (1.0 / (len(stops) - 1)) * i
 
                 if len(components) >= 3:
                     middle = float(components[2])
                 else:
                     middle = 0.5
 
-                self.gradientPoints.append(GradientPoint(position, colour, middle))
+                self.gradientStops.append(GradientStop(position, colour, middle))
 
     def load(self, drawing):
         """

@@ -74,7 +74,7 @@ def gradient_tuple(percent, start, end, middle):
 
     return colour
 
-def draw_gradient(width, height, type, points, direction = None):
+def draw_gradient(width, height, type, stops, direction = None):
     """
     Render a gradient to an `Image`.
 
@@ -85,7 +85,7 @@ def draw_gradient(width, height, type, points, direction = None):
 
         type (GradientType): The type of this gradient.
 
-        points ([GradientPoint]): An array of `GradientPoint`s used to draw the
+        stops ([GradientStop]): An array of gradient stops used to draw the
             gradient.
 
         direction (Direction): The direction of the gradient.
@@ -94,8 +94,8 @@ def draw_gradient(width, height, type, points, direction = None):
         Image: A gradient made from the given arguments, rendered into an image.
     """
 
-    if len(points) < 2:
-        raise ValueError('all gradients must have at least two points')
+    if len(stops) < 2:
+        raise ValueError('all gradients must have at least two stops')
 
     if type == GradientType.LINEAR and not direction:
         raise ValueError('all linear gradients must specify a direction')
@@ -103,13 +103,13 @@ def draw_gradient(width, height, type, points, direction = None):
     image = Image.new('RGBA', (width, height), (255, 255, 255, 0))
     draw = ImageDraw.Draw(image)
 
-    points.sort(key=lambda p: p.position)
+    stops.sort(key=lambda p: p.position)
 
-    # make sure there is always a final point at the end
-    if points[-1].position < 1:
-        p = copy(points[-1])
-        p.position = 1
-        points.append(p)
+    # make sure there is always a final stop at the end
+    if stops[-1].position < 1:
+        s = copy(stops[-1])
+        s.position = 1
+        stops.append(s)
 
     startIndex = 0
     endIndex = 1
@@ -121,8 +121,8 @@ def draw_gradient(width, height, type, points, direction = None):
             distance = height
 
     for i in range(distance):
-        start = points[startIndex]
-        end = points[endIndex]
+        start = stops[startIndex]
+        end = stops[endIndex]
 
         if type == GradientType.LINEAR:
             if direction == Direction.HORIZONTAL:
@@ -146,8 +146,8 @@ def draw_gradient(width, height, type, points, direction = None):
             draw.line([start, end], fill=colour)
 
         if i >= endPosition:
-            startIndex = min(startIndex + 1, len(points) - 1)
-            endIndex = min(endIndex + 1, len(points) - 1)
+            startIndex = min(startIndex + 1, len(stops) - 1)
+            endIndex = min(endIndex + 1, len(stops) - 1)
 
     return image
 
@@ -166,18 +166,18 @@ class GradientType(Enum):
 
     LINEAR = auto()
 
-class GradientPoint:
+class GradientStop:
     """
-    A point on a gradient.
+    A colour stop on a gradient.
 
     Attributes:
-        position (float): The position in the gradient of this point
+        position (float): The position in the gradient of this stop
             (from 0 to 1).
 
-        colour ((int, int, int)): The RGB(A) tuple colour of this point.
+        colour ((int, int, int)): The RGB(A) tuple colour of this stop.
 
         middle (float): The middle point of the colour interpolation
-            between this point and the next in the gradient.
+            between this stop and the next in the gradient.
     """
 
     def __init__(self, position, colour, middle = 0.5):
