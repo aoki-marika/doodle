@@ -9,9 +9,7 @@ import textwrap
 import xml.etree.ElementTree as ET
 
 from enum import Enum, Flag, auto
-from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 from .gradient import draw_gradient
 from .utils import round_tuple_values, paste_image
@@ -578,17 +576,24 @@ class Text(Drawable):
                 Image: An image of `text`.
             """
 
-            temp = Image.new('RGBA', self.font.getsize(text), (255, 255, 255, 0))
-            draw = ImageDraw.Draw(temp)
+            image = Image.new("RGB", self.font.getsize(text), "black")
+            alpha = Image.new("L", image.size, "black")
+            draw = ImageDraw.Draw(alpha)
+
+            draw.text((0, 0), text, font=self.font, fill="white")
 
             if self.has_gradient:
                 c = (255, 255, 255)
             else:
                 c = self.textColour
 
-            draw.text((0, 0), text, c, font=self.font)
+            fill = Image.new("RGBA", image.size, c)
+            fillMask = Image.eval(alpha, lambda p: 255 * (int(p != 0)))
+            image = Image.composite(fill, image, fillMask)
 
-            return temp
+            image.putalpha(alpha)
+
+            return image
 
         def anchored_position(imageSize, parentSize):
             """
