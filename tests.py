@@ -1,5 +1,5 @@
 
-from doodle import Drawable, Container, Box, Texture, Text, SpriteText, SpriteFont, Anchor, Axes, Drawing, TextMode
+from doodle import Drawable, Container, Box, Texture, Text, SpriteText, SpriteFont, Anchor, Axes, Drawing, TextMode, Direction, GradientType, GradientStop, draw_gradient
 
 from PIL import Image
 
@@ -29,7 +29,12 @@ def container_test():
                 origin=Anchor.CENTER,
                 relativeSizeAxes=Axes.BOTH,
                 size=(0.25, 0.25),
-                colour=(255, 255, 255),
+                gradientType=GradientType.LINEAR,
+                gradientDirection=Direction.VERTICAL,
+                gradientStops=[
+                    GradientStop(0, (255, 255, 255)),
+                    GradientStop(1, (0, 0, 0)),
+                ],
             ),
             Container(
                 anchor=Anchor.BOTTOM_RIGHT,
@@ -391,9 +396,14 @@ def text_test():
                 anchor=Anchor.CENTER,
                 origin=Anchor.CENTER,
                 fontPath=font,
-                textColour=(0, 255, 255),
                 textSize=30,
                 text='hello, world!',
+                gradientType=GradientType.LINEAR,
+                gradientDirection=Direction.VERTICAL,
+                gradientStops=[
+                    GradientStop(0.6, (244, 244, 244), 0.75),
+                    GradientStop(0.7, (180, 180, 180), 0.25),
+                ],
             ),
         ],
     )
@@ -462,6 +472,24 @@ def drawing_test():
     drawing = Drawing('tests/assets/drawing.xml', values)
     drawing.render().save('tests/drawing_test.png')
 
+def gradient_test():
+    points = [
+        GradientStop(0, (255, 0, 0), 0.1),
+        GradientStop(0.25, (0, 255, 0)),
+        GradientStop(0.75, (0, 0, 255), 0.25),
+        GradientStop(1, (0, 0, 0)),
+    ]
+
+    horizontal = draw_gradient(200, 400, GradientType.LINEAR, points, Direction.HORIZONTAL)
+    vertical = draw_gradient(200, 400, GradientType.LINEAR, points, Direction.VERTICAL)
+
+    image = Image.new('RGBA', (400, 400), (255, 255, 255, 0))
+
+    image.paste(horizontal, (0, 0))
+    image.paste(vertical, (200, 0))
+
+    image.save('tests/gradient_test.png')
+
 if __name__ == '__main__':
     container_test()
     margin_padding_test()
@@ -471,3 +499,4 @@ if __name__ == '__main__':
     text_test()
     sprite_text_test()
     drawing_test()
+    gradient_test()

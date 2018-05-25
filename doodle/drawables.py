@@ -13,6 +13,7 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 
+from .gradient import draw_gradient
 from .utils import round_tuple_values, paste_image
 
 # todo: only recalculate draw/layout/render size/position when values change, not on every get
@@ -68,6 +69,15 @@ class Drawable:
 
         size ((float, float)): The size of this drawable.
             Defaults to (0, 0).
+
+        gradientType (GradientType): The type of gradient for this drawable,
+            optional.
+
+        gradientDirection (Direction): The direction for the gradient of this
+            drawable, only applies if `gradientType` is `LINEAR`.
+
+        gradientStops ([GradientStop]): An array of gradient stops to draw
+            this drawables gradient with.
     """
 
     def __init__(self, width=0, height=0, x=0, y=0, **kwargs):
@@ -78,6 +88,9 @@ class Drawable:
         self.origin = Anchor.TOP_LEFT
         self.relativeSizeAxes = Axes.NONE
         self.margin = (0, 0, 0, 0)
+        self.gradientType = None
+        self.gradientDirection = None
+        self.gradientStops = None
 
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -214,6 +227,16 @@ class Drawable:
         p = self.draw_position
 
         return (p[0] - self.margin[2], p[1] - self.margin[0])
+
+    @property
+    def has_gradient(self):
+        return self.gradientType and self.gradientStops
+
+    def get_gradient(self, width, height):
+        if self.has_gradient:
+            return draw_gradient(width, height, self.gradientType, self.gradientStops, self.gradientDirection)
+
+        return None
 
     def render(self):
         """
@@ -366,6 +389,8 @@ class Box(Drawable):
     """
     A type of `Drawable` that draws as a box with a colour.
 
+    Supports gradients.
+
     Attributes:
         colour ((int, int, int)): The RGB tuple colour to draw with.
             Defaults to `(255, 255, 255)`.
@@ -376,7 +401,12 @@ class Box(Drawable):
         self.colour = colour
 
     def render(self):
-        return Image.new('RGB', round_tuple_values(self.draw_size), self.colour)
+        size = round_tuple_values(self.draw_size)
+
+        if self.has_gradient:
+            return self.get_gradient(size[0], size[1])
+        else:
+            return Image.new('RGB', size, self.colour)
 
 class Texture(Drawable):
     """
@@ -430,6 +460,8 @@ class TextMode(Enum):
 class Text(Drawable):
     """
     A type of `Drawable` that can draw text with true type fonts.
+
+    Supports gradients.
 
     Notes:
         When using `TextMode.SINGLE_LINE`, you should not change the width or
@@ -548,7 +580,13 @@ class Text(Drawable):
 
             temp = Image.new('RGBA', self.font.getsize(text), (255, 255, 255, 0))
             draw = ImageDraw.Draw(temp)
-            draw.text((0, 0), text, self.textColour, font=self.font)
+
+            if self.has_gradient:
+                c = (255, 255, 255)
+            else:
+                c = self.textColour
+
+            draw.text((0, 0), text, c, font=self.font)
 
             return temp
 
@@ -614,8 +652,14 @@ class Text(Drawable):
             if self.mode == TextMode.SQUISH and size[0] < textImage.size[0]:
                 textImage = textImage.resize((size[0], textImage.size[1]), Image.ANTIALIAS)
 
+        renderedText = paste_image(drawImage, textImage, (horizontal_position(textImage), vertical_position(textImage)))
+
+        if self.has_gradient:
+            gradient = self.get_gradient(size[0], size[1])
+            renderedText = Image.composite(gradient, renderedText, renderedText)
+
         # correctly horizontally and vertically place the text image
-        return paste_image(drawImage, textImage, (horizontal_position(textImage), vertical_position(textImage)));
+        return renderedText;
 
 class SpriteText(Drawable):
     """
